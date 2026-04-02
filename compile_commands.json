@@ -1,0 +1,92 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-std=c17",
+      "-I./include",
+      "-O2",
+      "-c",
+      "-o",
+      "src/dia_solver.o",
+      "src/dia_solver.c"
+    ],
+    "directory": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d",
+    "file": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d/src/dia_solver.c",
+    "output": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d/src/dia_solver.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-std=c17",
+      "-I./include",
+      "-O2",
+      "-c",
+      "-o",
+      "src/ldu_solver.o",
+      "src/ldu_solver.c"
+    ],
+    "directory": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d",
+    "file": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d/src/ldu_solver.c",
+    "output": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d/src/ldu_solver.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-std=c17",
+      "-I./include",
+      "-O2",
+      "-c",
+      "-o",
+      "src/main.o",
+      "src/main.c"
+    ],
+    "directory": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d",
+    "file": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d/src/main.c",
+    "output": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d/src/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-std=c17",
+      "-I./include",
+      "-O2",
+      "-c",
+      "-o",
+      "src/problem.o",
+      "src/problem.c"
+    ],
+    "directory": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d",
+    "file": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d/src/problem.c",
+    "output": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d/src/problem.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-std=c17",
+      "-I./include",
+      "-O2",
+      "-c",
+      "-o",
+      "src/utils.o",
+      "src/utils.c"
+    ],
+    "directory": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d",
+    "file": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d/src/utils.c",
+    "output": "/home/arv/OpenFOAM_Flavours/Diagnol_Matrix_3d/src/utils.o"
+  }
+]
