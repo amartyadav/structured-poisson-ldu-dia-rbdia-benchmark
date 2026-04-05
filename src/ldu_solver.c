@@ -7,8 +7,8 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
 {
     // allocating the arrays
 
-    mat->nCells = N * N;
-    mat->nFaces = 2 * N * (N-1);
+    mat->nCells = N * N * N;
+    mat->nFaces = 3 * N * N * (N - 1); // ((N - 1) * N * N) + (N * (N - 1) * N) + (N * N * (N - 1));
     mat->diag = calloc(mat->nCells, sizeof(double));
     mat->upper = malloc(sizeof(double) * mat->nFaces);
     mat->lower = malloc(sizeof(double) * mat->nFaces);
@@ -27,10 +27,11 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
     int f = 0;
     mat->ownerStart[0] = 0;
 
-    for(int idx = 0; idx < N * N; idx++)
+    for(int idx = 0; idx < N * N * N; idx++)
     {
-        int i = idx / N; // row
-        int j = idx % N; // column
+        int i = idx /  (N * N);
+        int j = (idx / N) % N;
+        int k = idx % N;
 
         // this cells face starts from here
         mat->ownerStart[idx] = f;
