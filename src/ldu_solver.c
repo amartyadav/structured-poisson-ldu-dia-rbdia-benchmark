@@ -1,14 +1,16 @@
 // Initiating the setup of the LDU matrix addressing scheme for the solver
 
 #include "ldu_solver.h"
+#include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 void assemble_ldu(LDUMatrix *mat, double *source, int N)
 {
     // allocating the arrays
 
-    mat->nCells = N * N;
-    mat->nFaces = 2 * N * (N-1);
+    mat->nCells = N * N * N;
+    mat->nFaces = 3 * N * N * (N-1);
     mat->diag = calloc(mat->nCells, sizeof(double));
     mat->upper = malloc(sizeof(double) * mat->nFaces);
     mat->lower = malloc(sizeof(double) * mat->nFaces);
@@ -27,10 +29,11 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
     int f = 0;
     mat->ownerStart[0] = 0;
 
-    for(int idx = 0; idx < N * N; idx++)
+    for(int idx = 0; idx < N * N * N; idx++)
     {
-        int i = idx / N; // row
-        int j = idx % N; // column
+        int k = idx / (N * N);
+        int i = (idx / N) % N;
+        int j = idx % N; 
 
         // this cells face starts from here
         mat->ownerStart[idx] = f;
@@ -58,19 +61,36 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
             mat->diag[idx+N] += 1.0;
             f++;
         }
+        
+        if (k < N - 1)
+        {
+            mat->lower[f] = -1.0;
+            mat->upper[f] = -1.0;
+            mat->uAddr[f] = idx+(N*N);
+            mat->diag[idx] += 1.0;
+            mat->diag[idx+(N*N)] += 1.0;
+            f++;
+        }
     }
 
-    // After the face-building loop, fix up boundary cells for Dirichlet BC
-    for (int idx = 0; idx < N*N; idx++) {
-        int i = idx / N;
-        int j = idx % N;
-        if (j == 0)     { mat->diag[idx] += 1.0; /* source += 0 since sin(0)=0 */ }
-        if (j == N-1)   { mat->diag[idx] += 1.0; }
-        if (i == 0)     { mat->diag[idx] += 1.0; }
-        if (i == N-1)   { mat->diag[idx] += 1.0; }
-    }
+    // Dirichlet boundary fix: all N^3 cells, six faces
+        for (int idx = 0; idx < N * N * N; idx++)
+        {
+            int k = idx / (N * N);
+            int i = (idx / N) % N;
+            int j = idx % N;
+    
+            if (j == 0)     { mat->diag[idx] += 1.0; }
+            if (j == N - 1) { mat->diag[idx] += 1.0; }
+            if (i == 0)     { mat->diag[idx] += 1.0; }
+            if (i == N - 1) { mat->diag[idx] += 1.0; }
+            if (k == 0)     { mat->diag[idx] += 1.0; }
+            if (k == N - 1) { mat->diag[idx] += 1.0; }
+        }
 
-    mat->ownerStart[N*N] = f; //should this be mat->nCells = f  instead?
+    mat->ownerStart[N*N*N] = f; //should this be mat->nCells = f  instead?
+    printf("f = %d, nFaces = %d\n", f, mat->nFaces);
+    assert(f == mat->nFaces);
 }
 
 void gs_sweep_ldu(LDUMatrix *mat)
