@@ -16,10 +16,25 @@ void assemble_dia(DIAMatrix *mat, double *source, int N)
         mat->source[idx] = source[idx];
     }
 
-    // diagonal coefficients: 6.0 for every cell (Dirichlet BCs already baked in) (changed from 4.0 as we have 6 neighbours instead of 4 for the diagonol cells)
-    for(int cell = 0; cell < mat->nCells; cell++)
+    // // diagonal coefficients: 6.0 for every cell (Dirichlet BCs already baked in) (changed from 4.0 as we have 6 neighbours instead of 4 for the diagonol cells)
+    // for(int cell = 0; cell < mat->nCells; cell++)
+    // {
+    //     mat->diag[cell] = 6.0;
+    // }
+    
+    for (int cell = 0; cell < mat->nCells; cell++)
     {
+        int k = cell / (N * N);
+        int i = (cell / N) % N;
+        int j = cell % N;
+    
         mat->diag[cell] = 6.0;
+        if (j == 0)     { mat->diag[cell] += 1.0; }
+        if (j == N - 1) { mat->diag[cell] += 1.0; }
+        if (i == 0)     { mat->diag[cell] += 1.0; }
+        if (i == N - 1) { mat->diag[cell] += 1.0; }
+        if (k == 0)     { mat->diag[cell] += 1.0; }
+        if (k == N - 1) { mat->diag[cell] += 1.0; }
     }
 }
 
