@@ -80,12 +80,12 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
             int i = (idx / N) % N;
             int j = idx % N;
     
-            if (j == 0)     { mat->diag[idx] += 1.0; }
-            if (j == N - 1) { mat->diag[idx] += 1.0; }
-            if (i == 0)     { mat->diag[idx] += 1.0; }
-            if (i == N - 1) { mat->diag[idx] += 1.0; }
-            if (k == 0)     { mat->diag[idx] += 1.0; }
-            if (k == N - 1) { mat->diag[idx] += 1.0; }
+            if (j == 0)     { mat->diag[idx] += 2.0; }
+            if (j == N - 1) { mat->diag[idx] += 2.0; }
+            if (i == 0)     { mat->diag[idx] += 2.0; }
+            if (i == N - 1) { mat->diag[idx] += 2.0; }
+            if (k == 0)     { mat->diag[idx] += 2.0; }
+            if (k == N - 1) { mat->diag[idx] += 2.0; }
         }
 
     mat->ownerStart[N*N*N] = f; //should this be mat->nCells = f  instead?
