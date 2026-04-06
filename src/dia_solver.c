@@ -72,6 +72,8 @@ void gs_sweep_dia(DIAMatrix *mat)
     }
 }
 
+
+
 void free_dia(DIAMatrix *mat)
 {
     free(mat->bPrime);

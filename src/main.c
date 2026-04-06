@@ -21,8 +21,8 @@ void profile_sweeps(int N, int num_sweeps);
 int main(int argc, char *argv[]) {
     if (argc > 1 && strcmp(argv[1], "profile") == 0)
     {
-        int N = 50;
-        int num_sweeps = 200;
+        int N = 300;
+        int num_sweeps = 1000;
         if (argc > 2) N = atoi(argv[2]);
         if (argc > 3) num_sweeps = atoi(argv[3]);
 
