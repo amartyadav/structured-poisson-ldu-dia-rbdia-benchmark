@@ -61,8 +61,15 @@ double compute_residual(double *u, double *b, int N)
         int i = (idx / N) % N;
         int j = idx % N;
 
-        double Au_idx = 6.0 * u[idx];
+        double diag = 6.0;
+        if (j == 0)     { diag += 1.0; }
+        if (j == N - 1) { diag += 1.0; }
+        if (i == 0)     { diag += 1.0; }
+        if (i == N - 1) { diag += 1.0; }
+        if (k == 0)     { diag += 1.0; }
+        if (k == N - 1) { diag += 1.0; }
 
+        double Au_idx = diag * u[idx];
         if (j < N - 1) Au_idx -= u[idx + 1];
         if (j > 0)     Au_idx -= u[idx - 1];
         if (i < N - 1) Au_idx -= u[idx + N];
