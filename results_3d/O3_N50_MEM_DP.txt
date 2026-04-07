@@ -1,0 +1,8 @@
+--------------------------------------------------------------------------------
+CPU name:	AMD Ryzen 7 250 w/ Radeon 780M Graphics        
+CPU type:	AMD K19 (Zen4) architecture
+CPU clock:	3.29 GHz
+ERROR - [/home/arv/likwid/src/perfgroup.c:perfgroup_readGroup:830] No such file or directory.
+Cannot read group file MEM_DP.txt. Searched in /usr/local/share/likwid/perfgroups/zen4/MEM_DP.txt and /home/arv/.likwid/groups/zen4/MEM_DP.txt
+ERROR - [/home/arv/likwid/src/perfmon.c:perfmon_addEventSet:2603] Permission denied.
+Access to performance group MEM_DP not allowed

@@ -1,0 +1,76 @@
+--------------------------------------------------------------------------------
+CPU name:	AMD Ryzen 7 250 w/ Radeon 780M Graphics        
+CPU type:	AMD K19 (Zen4) architecture
+CPU clock:	3.29 GHz
+--------------------------------------------------------------------------------
+=== Profiling run: N=50, sweeps=500 ===
+Working set (DIA): ~3.8 MB
+Working set (LDU): ~14.1 MB
+f = 367500, nFaces = 367500
+
+--- LDU solver: 500 sweeps ---
+LDU residual after 500 sweeps: 5.828692e-04
+
+--- DIA solver: 500 sweeps ---
+DIA residual after 500 sweeps: 5.828692e-04
+
+=== Profiling complete ===
+--------------------------------------------------------------------------------
+ERROR - [/home/arv/likwid/src/perfmon.c:perfmon_getMetricOfRegionThread:4160] Success.
+Cannot calculate formula FIXC1/FIXC0
+ERROR - [/home/arv/likwid/src/perfmon.c:perfmon_getMetricOfRegionThread:4160] Success.
+Cannot calculate formula FIXC1/FIXC0
+Region DIA_sweep, Group 1: L3CACHE
++-------------------+------------+
+|    Region Info    | HWThread 2 |
++-------------------+------------+
+| RDTSC Runtime [s] |   0.647415 |
+|     call count    |          1 |
++-------------------+------------+
+
++---------------------------+---------+------------+
+|           Event           | Counter | HWThread 2 |
++---------------------------+---------+------------+
+|    RETIRED_INSTRUCTIONS   |   PMC0  | 4218772000 |
+|    CPU_CLOCKS_UNHALTED    |   PMC1  | 2101902000 |
+| L3_LOOKUP_STATE_ALL_TYPES |  CPMC0  |   43982700 |
+|    L3_LOOKUP_STATE_MISS   |  CPMC1  |     296177 |
++---------------------------+---------+------------+
+
++---------------------+------------+
+|        Metric       | HWThread 2 |
++---------------------+------------+
+| Runtime (RDTSC) [s] |     0.6474 |
+|         CPI         |          0 |
+|   L3 request rate   |     0.0104 |
+|     L3 miss rate    |     0.0001 |
+|    L3 miss ratio    |     0.0067 |
++---------------------+------------+
+
+Region LDU_sweep, Group 1: L3CACHE
++-------------------+------------+
+|    Region Info    | HWThread 2 |
++-------------------+------------+
+| RDTSC Runtime [s] |   0.770439 |
+|     call count    |          1 |
++-------------------+------------+
+
++---------------------------+---------+------------+
+|           Event           | Counter | HWThread 2 |
++---------------------------+---------+------------+
+|    RETIRED_INSTRUCTIONS   |   PMC0  | 5737512000 |
+|    CPU_CLOCKS_UNHALTED    |   PMC1  | 2493353000 |
+| L3_LOOKUP_STATE_ALL_TYPES |  CPMC0  |  106589900 |
+|    L3_LOOKUP_STATE_MISS   |  CPMC1  |    4486378 |
++---------------------------+---------+------------+
+
++---------------------+------------+
+|        Metric       | HWThread 2 |
++---------------------+------------+
+| Runtime (RDTSC) [s] |     0.7704 |
+|         CPI         |          0 |
+|   L3 request rate   |     0.0186 |
+|     L3 miss rate    |     0.0008 |
+|    L3 miss ratio    |     0.0421 |
++---------------------+------------+
+

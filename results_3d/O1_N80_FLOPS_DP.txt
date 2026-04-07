@@ -1,0 +1,76 @@
+--------------------------------------------------------------------------------
+CPU name:	AMD Ryzen 7 250 w/ Radeon 780M Graphics        
+CPU type:	AMD K19 (Zen4) architecture
+CPU clock:	3.29 GHz
+--------------------------------------------------------------------------------
+=== Profiling run: N=80, sweeps=500 ===
+Working set (DIA): ~15.6 MB
+Working set (LDU): ~58.1 MB
+f = 1516800, nFaces = 1516800
+
+--- LDU solver: 500 sweeps ---
+LDU residual after 500 sweeps: 7.569261e-04
+
+--- DIA solver: 500 sweeps ---
+DIA residual after 500 sweeps: 7.569261e-04
+
+=== Profiling complete ===
+--------------------------------------------------------------------------------
+Region DIA_sweep, Group 1: FLOPS_DP
++-------------------+------------+
+|    Region Info    | HWThread 2 |
++-------------------+------------+
+| RDTSC Runtime [s] |   2.786199 |
+|     call count    |          1 |
++-------------------+------------+
+
++---------------------------+---------+-------------+
+|           Event           | Counter |  HWThread 2 |
++---------------------------+---------+-------------+
+|      ACTUAL_CPU_CLOCK     |  FIXC1  |  9083136000 |
+|       MAX_CPU_CLOCK       |  FIXC2  |  9157040000 |
+|    RETIRED_INSTRUCTIONS   |   PMC0  | 17328030000 |
+|    CPU_CLOCKS_UNHALTED    |   PMC1  |  9014057000 |
+| RETIRED_SSE_AVX_FLOPS_ALL |   PMC2  |  1772800000 |
+|           MERGE           |   PMC3  |           0 |
++---------------------------+---------+-------------+
+
++----------------------+------------+
+|        Metric        | HWThread 2 |
++----------------------+------------+
+|  Runtime (RDTSC) [s] |     2.7862 |
+| Runtime unhalted [s] |     2.7577 |
+|      Clock [MHz]     |  3267.2035 |
+|          CPI         |     0.5202 |
+|     DP [MFLOP/s]     |   636.2790 |
++----------------------+------------+
+
+Region LDU_sweep, Group 1: FLOPS_DP
++-------------------+------------+
+|    Region Info    | HWThread 2 |
++-------------------+------------+
+| RDTSC Runtime [s] |   3.343195 |
+|     call count    |          1 |
++-------------------+------------+
+
++---------------------------+---------+-------------+
+|           Event           | Counter |  HWThread 2 |
++---------------------------+---------+-------------+
+|      ACTUAL_CPU_CLOCK     |  FIXC1  | 10899540000 |
+|       MAX_CPU_CLOCK       |  FIXC2  | 10987740000 |
+|    RETIRED_INSTRUCTIONS   |   PMC0  | 23616020000 |
+|    CPU_CLOCKS_UNHALTED    |   PMC1  | 10755720000 |
+| RETIRED_SSE_AVX_FLOPS_ALL |   PMC2  |  3289600000 |
+|           MERGE           |   PMC3  |           0 |
++---------------------------+---------+-------------+
+
++----------------------+------------+
+|        Metric        | HWThread 2 |
++----------------------+------------+
+|  Runtime (RDTSC) [s] |     3.3432 |
+| Runtime unhalted [s] |     3.3091 |
+|      Clock [MHz]     |  3267.3471 |
+|          CPI         |     0.4554 |
+|     DP [MFLOP/s]     |   983.9689 |
++----------------------+------------+
+

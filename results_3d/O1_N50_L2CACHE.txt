@@ -1,0 +1,82 @@
+--------------------------------------------------------------------------------
+CPU name:	AMD Ryzen 7 250 w/ Radeon 780M Graphics        
+CPU type:	AMD K19 (Zen4) architecture
+CPU clock:	3.29 GHz
+--------------------------------------------------------------------------------
+=== Profiling run: N=50, sweeps=500 ===
+Working set (DIA): ~3.8 MB
+Working set (LDU): ~14.1 MB
+f = 367500, nFaces = 367500
+
+--- LDU solver: 500 sweeps ---
+LDU residual after 500 sweeps: 5.828692e-04
+
+--- DIA solver: 500 sweeps ---
+DIA residual after 500 sweeps: 5.828692e-04
+
+=== Profiling complete ===
+--------------------------------------------------------------------------------
+Region LDU_sweep, Group 1: L2CACHE
++-------------------+------------+
+|    Region Info    | HWThread 2 |
++-------------------+------------+
+| RDTSC Runtime [s] |   0.771617 |
+|     call count    |          1 |
++-------------------+------------+
+
++--------------------------------+---------+------------+
+|              Event             | Counter | HWThread 2 |
++--------------------------------+---------+------------+
+|  REQUESTS_TO_L2_GRP1_ALL_NO_PF |   PMC0  |  122398300 |
+|         L2_PF_HIT_IN_L2        |   PMC1  |  189573700 |
+|         L2_PF_HIT_IN_L3        |   PMC2  |   97965840 |
+|        L2_PF_MISS_IN_L3        |   PMC3  |    2558313 |
+| CORE_TO_L2_CACHE_REQUESTS_HITS |   PMC4  |  119566800 |
+|      RETIRED_INSTRUCTIONS      |   PMC5  | 5737513000 |
++--------------------------------+---------+------------+
+
++----------------------+--------------+
+|        Metric        |  HWThread 2  |
++----------------------+--------------+
+|  Runtime (RDTSC) [s] |       0.7716 |
+| Runtime unhalted [s] | 3.036019e-10 |
+|    L2 request rate   |       0.0719 |
+|     L2 miss rate     |       0.0180 |
+|     L2 miss ratio    |       0.2506 |
+|      L2 accesses     |    412496153 |
+|        L2 hits       |    309140500 |
+|       L2 misses      |    103355653 |
++----------------------+--------------+
+
+Region DIA_sweep, Group 1: L2CACHE
++-------------------+------------+
+|    Region Info    | HWThread 2 |
++-------------------+------------+
+| RDTSC Runtime [s] |   0.647146 |
+|     call count    |          1 |
++-------------------+------------+
+
++--------------------------------+---------+------------+
+|              Event             | Counter | HWThread 2 |
++--------------------------------+---------+------------+
+|  REQUESTS_TO_L2_GRP1_ALL_NO_PF |   PMC0  |   54692890 |
+|         L2_PF_HIT_IN_L2        |   PMC1  |   82599670 |
+|         L2_PF_HIT_IN_L3        |   PMC2  |   38709050 |
+|        L2_PF_MISS_IN_L3        |   PMC3  |      87313 |
+| CORE_TO_L2_CACHE_REQUESTS_HITS |   PMC4  |   53934940 |
+|      RETIRED_INSTRUCTIONS      |   PMC5  | 4218774000 |
++--------------------------------+---------+------------+
+
++----------------------+--------------+
+|        Metric        |  HWThread 2  |
++----------------------+--------------+
+|  Runtime (RDTSC) [s] |       0.6471 |
+| Runtime unhalted [s] | 3.036019e-10 |
+|    L2 request rate   |       0.0417 |
+|     L2 miss rate     |       0.0094 |
+|     L2 miss ratio    |       0.2246 |
+|      L2 accesses     |    176088923 |
+|        L2 hits       |    136534610 |
+|       L2 misses      |     39554313 |
++----------------------+--------------+
+

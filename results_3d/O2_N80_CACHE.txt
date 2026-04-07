@@ -1,0 +1,84 @@
+--------------------------------------------------------------------------------
+CPU name:	AMD Ryzen 7 250 w/ Radeon 780M Graphics        
+CPU type:	AMD K19 (Zen4) architecture
+CPU clock:	3.29 GHz
+--------------------------------------------------------------------------------
+=== Profiling run: N=80, sweeps=500 ===
+Working set (DIA): ~15.6 MB
+Working set (LDU): ~58.1 MB
+f = 1516800, nFaces = 1516800
+
+--- LDU solver: 500 sweeps ---
+LDU residual after 500 sweeps: 7.569261e-04
+
+--- DIA solver: 500 sweeps ---
+DIA residual after 500 sweeps: 7.569261e-04
+
+=== Profiling complete ===
+--------------------------------------------------------------------------------
+Region DIA_sweep, Group 1: CACHE
++-------------------+------------+
+|    Region Info    | HWThread 2 |
++-------------------+------------+
+| RDTSC Runtime [s] |   2.670531 |
+|     call count    |          1 |
++-------------------+------------+
+
++--------------------------+---------+-------------+
+|           Event          | Counter |  HWThread 2 |
++--------------------------+---------+-------------+
+|     ACTUAL_CPU_CLOCK     |  FIXC1  |  8724931000 |
+|       MAX_CPU_CLOCK      |  FIXC2  |  8796107000 |
+|   RETIRED_INSTRUCTIONS   |   PMC0  | 13763190000 |
+|    CPU_CLOCKS_UNHALTED   |   PMC1  |  8661001000 |
+|    DATA_CACHE_ACCESSES   |   PMC2  |  3334155000 |
+| ANY_DATA_CACHE_FILLS_ALL |   PMC3  |   228761300 |
++--------------------------+---------+-------------+
+
++-------------------------+------------+
+|          Metric         | HWThread 2 |
++-------------------------+------------+
+|   Runtime (RDTSC) [s]   |     2.6705 |
+|   Runtime unhalted [s]  |     2.6491 |
+|       Clock [MHz]       |  3266.8950 |
+|           CPI           |     0.6293 |
+|   data cache requests   | 3334155000 |
+| data cache request rate |     0.2423 |
+|    data cache misses    |  228761300 |
+|   data cache miss rate  |     0.0166 |
+|  data cache miss ratio  |     0.0686 |
++-------------------------+------------+
+
+Region LDU_sweep, Group 1: CACHE
++-------------------+------------+
+|    Region Info    | HWThread 2 |
++-------------------+------------+
+| RDTSC Runtime [s] |   3.349912 |
+|     call count    |          1 |
++-------------------+------------+
+
++--------------------------+---------+-------------+
+|           Event          | Counter |  HWThread 2 |
++--------------------------+---------+-------------+
+|     ACTUAL_CPU_CLOCK     |  FIXC1  | 10945220000 |
+|       MAX_CPU_CLOCK      |  FIXC2  | 11033830000 |
+|   RETIRED_INSTRUCTIONS   |   PMC0  | 18524820000 |
+|    CPU_CLOCKS_UNHALTED   |   PMC1  | 10777240000 |
+|    DATA_CACHE_ACCESSES   |   PMC2  |  8405905000 |
+| ANY_DATA_CACHE_FILLS_ALL |   PMC3  |   492408800 |
++--------------------------+---------+-------------+
+
++-------------------------+------------+
+|          Metric         | HWThread 2 |
++-------------------------+------------+
+|   Runtime (RDTSC) [s]   |     3.3499 |
+|   Runtime unhalted [s]  |     3.3232 |
+|       Clock [MHz]       |  3267.0959 |
+|           CPI           |     0.5818 |
+|   data cache requests   | 8405905000 |
+| data cache request rate |     0.4538 |
+|    data cache misses    |  492408800 |
+|   data cache miss rate  |     0.0266 |
+|  data cache miss ratio  |     0.0586 |
++-------------------------+------------+
+
