@@ -1,10 +1,11 @@
 #include "dia_solver.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 void assemble_dia(DIAMatrix *mat, double *source, int N)
 {
     mat->N = N;
-    mat->nCells = N * N;
+    mat->nCells = N * N * N;
     mat->source = malloc(sizeof(double) * mat->nCells);
     mat->bPrime = malloc(sizeof(double) * mat->nCells);
     mat->diag = malloc(sizeof(double) * mat->nCells);
@@ -16,72 +17,145 @@ void assemble_dia(DIAMatrix *mat, double *source, int N)
         mat->source[idx] = source[idx];
     }
 
-    // diagonal coefficients: 4.0 for every cell (Dirichlet BCs already baked in)
-    for(int cell = 0; cell < mat->nCells; cell++)
+    // // diagonal coefficients: 6.0 for every cell (Dirichlet BCs already baked in) (changed from 4.0 as we have 6 neighbours instead of 4 for the diagonol cells)
+    // for(int cell = 0; cell < mat->nCells; cell++)
+    // {
+    //     mat->diag[cell] = 6.0;
+    // }
+
+    for (int cell = 0; cell < mat->nCells; cell++)
     {
-        mat->diag[cell] = 4.0;
+        int k = cell / (N * N);
+        int i = (cell / N) % N;
+        int j = cell % N;
+
+        mat->diag[cell] = 6.0;
+        if (j == 0)     { mat->diag[cell] += 1.0; }
+        if (j == N - 1) { mat->diag[cell] += 1.0; }
+        if (i == 0)     { mat->diag[cell] += 1.0; }
+        if (i == N - 1) { mat->diag[cell] += 1.0; }
+        if (k == 0)     { mat->diag[cell] += 1.0; }
+        if (k == N - 1) { mat->diag[cell] += 1.0; }
     }
 }
 
+// updated gs_sweep_dia for 3d version, without the explicit handling for edge cases.
 void gs_sweep_dia(DIAMatrix *mat)
 {
-    // reset bPrime to source at the beginning of every sweep
-    for(int idx = 0; idx < mat->nCells; idx++)
+    int N = mat->N;
+
+    for (int idx = 0; idx < mat->nCells; idx++)
     {
         mat->bPrime[idx] = mat->source[idx];
     }
 
-    // interior sweep : i = 1 -> N - 2, j = 1 -> N - 2;
-    for(int i = 0; i < mat->N - 1; i++)
+    for (int idx = 0; idx < mat->nCells; idx++)
     {
-        // interior cells (all neighbours (top and right) exist)
-        for(int j = 0; j < mat-> N - 1; j++)
-        {
-            int idx =i * mat->N + j;
-            double psii = mat->bPrime[idx];
+        int k = idx / (N * N);
+        int i = (idx / N) % N;
+        int j = idx % N;
 
-            // upper triangle pull -> subtracting the stale values from the unsolved (upper) neighbours
-            psii -= -1.0 * mat->psi[idx + 1];
-            psii -= -1.0 * mat->psi[idx+mat->N];
-
-            // dividing by the diagnol (pivot)
-            psii /= mat->diag[idx];
-
-            // lower triangle push -> pushing the updated values into the forward neighbours' bPrime
-            mat->bPrime[idx + 1] -= -1.0 * psii;
-            mat->bPrime[idx + mat->N] -= -1.0 * psii;
-
-            // commit the updated value into psi
-            mat->psi[idx] = psii;
-        }
-
-        // last column of this row i (only top neighbour exists)
-        int idx = i * mat->N + (mat->N - 1);
         double psii = mat->bPrime[idx];
-        psii -= -1.0 * mat->psi[idx + mat->N];
+
+        // upper triangle pull
+        if (j < N - 1) { psii -= -1.0 * mat->psi[idx + 1]; }
+        if (i < N - 1) { psii -= -1.0 * mat->psi[idx + N]; }
+        if (k < N - 1) { psii -= -1.0 * mat->psi[idx + N * N]; }
+
         psii /= mat->diag[idx];
 
-        mat->bPrime[idx + mat->N] -= -1.0 * psii;
+        // lower triangle push
+        if (j < N - 1) { mat->bPrime[idx + 1]     -= -1.0 * psii; }
+        if (i < N - 1) { mat->bPrime[idx + N]      -= -1.0 * psii; }
+        if (k < N - 1) { mat->bPrime[idx + N * N]  -= -1.0 * psii; }
+
         mat->psi[idx] = psii;
     }
+}
 
-    // last row (i = N - 1); no top neighbour (only right neighbour exists)
-    for(int j = 0; j < mat->N - 1; j++)
+// function to enable and store memory tracing for visualisation
+void gs_sweep_dia_trace(DIAMatrix *mat, FILE *fp)
+{
+    int N = mat->N;
+
+    for (int idx = 0; idx < mat->nCells; idx++)
     {
-    int idx = (mat->N - 1) * mat->N + j;
-    double psii = mat->bPrime[idx];
-    psii -= -1.0 * mat->psi[idx + 1];
-    psii /= mat->diag[idx];
-
-    mat->bPrime[idx + 1] -= -1.0 * psii;
-    mat->psi[idx] = psii;
+        mat->bPrime[idx] = mat->source[idx];
     }
 
-    // very last cell (no neighbours in either direction)
-    int idx = mat->nCells - 1;
-    double psii = mat->bPrime[idx];
-    psii /= mat->diag[idx];
-    mat->psi[idx] = psii;
+    for (int idx = 0; idx < mat->nCells; idx++)
+    {
+        int k = idx / (N * N);
+        int i = (idx / N) % N;
+        int j = idx % N;
+
+        int read_array[3];
+        int write_array[3];
+        int read_array_idx = 0;
+        int write_array_idx = 0;
+
+
+        double psii = mat->bPrime[idx];
+
+        // upper triangle pull
+        // also writing the indices being accessed to the file
+        if (j < N - 1)
+        {
+            psii -= -1.0 * mat->psi[idx + 1];
+            read_array[read_array_idx] = idx+1;
+            read_array_idx++;
+        }
+        if (i < N - 1)
+        {
+            psii -= -1.0 * mat->psi[idx + N];
+            read_array[read_array_idx] = idx+N;
+            read_array_idx++;
+        }
+        if (k < N - 1)
+        {
+            psii -= -1.0 * mat->psi[idx + N * N];
+            read_array[read_array_idx] = idx + N * N;
+            read_array_idx++;
+        }
+
+        psii /= mat->diag[idx];
+
+        // lower triangle push
+        if (j < N - 1)
+        {
+            mat->bPrime[idx + 1] -= -1.0 * psii;
+            write_array[write_array_idx] = idx+1;
+            write_array_idx++;
+        }
+        if (i < N - 1)
+        {
+            mat->bPrime[idx + N] -= -1.0 * psii;
+            write_array[write_array_idx] = idx+N;
+            write_array_idx++;
+        }
+        if (k < N - 1)
+        {
+            mat->bPrime[idx + N * N] -= -1.0 * psii;
+            write_array[write_array_idx] = idx + N * N;
+            write_array_idx++;
+        }
+
+        mat->psi[idx] = psii;
+
+        fprintf(fp, "{\"solver\":\"DIA\",\"cell\":%d,\"read\":[", idx);
+        for (int r = 0; r < read_array_idx; r++)
+        {
+            if (r > 0) fprintf(fp, ",");
+            fprintf(fp, "%d", read_array[r]);
+        }
+        fprintf(fp, "],\"write\":[");
+        for (int w = 0; w < write_array_idx; w++)
+        {
+            if (w > 0) fprintf(fp, ",");
+            fprintf(fp, "%d", write_array[w]);
+        }
+        fprintf(fp, "]}\n");
+    }
 }
 
 void free_dia(DIAMatrix *mat)

@@ -21,8 +21,8 @@ void profile_sweeps(int N, int num_sweeps);
 int main(int argc, char *argv[]) {
     if (argc > 1 && strcmp(argv[1], "profile") == 0)
     {
-        int N = 512;
-        int num_sweeps = 200;
+        int N = 300;
+        int num_sweeps = 1000;
         if (argc > 2) N = atoi(argv[2]);
         if (argc > 3) num_sweeps = atoi(argv[3]);
 
@@ -41,15 +41,20 @@ int main(int argc, char *argv[]) {
 }
 
 void profile_sweeps(int N, int num_sweeps) {
+    int nCells = N * N * N;
+    int nFaces = 3 * N * N * (N - 1);
+
     printf("=== Profiling run: N=%d, sweeps=%d ===\n", N, num_sweeps);
     printf("Working set (DIA): ~%.1f MB\n",
-           (4.0 * N * N * sizeof(double)) / (1024.0 * 1024.0));
+           (4.0 * nCells * sizeof(double)) / (1024.0 * 1024.0));
     printf("Working set (LDU): ~%.1f MB\n",
-           (4.0 * N * N * sizeof(double) + 3.0 * 2 * N * (N - 1) * sizeof(double)
-            + 2 * N * (N - 1) * sizeof(int) + (N * N + 1) * sizeof(int))
+           (4.0 * nCells * sizeof(double)
+            + 3.0 * nFaces * sizeof(double)
+            + nFaces * sizeof(int)
+            + (nCells + 1) * sizeof(int))
            / (1024.0 * 1024.0));
 
-    double *b = malloc(sizeof(double) * N * N);
+    double *b = malloc(sizeof(double) * nCells);
     compute_source(b, N);
 
     // --- LDU solver ---
@@ -89,22 +94,23 @@ void profile_sweeps(int N, int num_sweeps) {
 }
 
 void test_multiple_N(void) {
-    int N_s[] = {4, 6, 8, 12, 16, 20, 24, 48};
-    int num_sizes = 8;
+    int N_s[] = {4, 6, 8, 12, 16, 20};
+    int num_sizes = 6;
 
     printf("=== LDU Solver Runs ===\n\n");
     for (int i = 0; i < num_sizes; i++)
     {
         int N = N_s[i];
+        int nCells = N * N * N;
         printf("=== Starting LDU GS for N=%d ===\n", N);
         LDUMatrix mat;
-        double *b = malloc(sizeof(double) * N * N);
-        double *u_exact = malloc(sizeof(double) * N * N);
+        double *b = malloc(sizeof(double) * nCells);
+        double *u_exact = malloc(sizeof(double) * nCells);
         compute_source(b, N);
         compute_exact(u_exact, N);
         assemble_ldu(&mat, b, N);
-        printf("diag[0]=%.1f  diag[N/2]=%.1f  diag[N*N-1]=%.1f\n",
-               mat.diag[0], mat.diag[N / 2], mat.diag[N * N - 1]);
+        printf("diag[0]=%.1f  diag[nCells/2]=%.1f  diag[nCells-1]=%.1f\n",
+               mat.diag[0], mat.diag[nCells / 2], mat.diag[nCells - 1]);
         printf("nFaces expected=%d  ownerStart[nCells]=%d\n",
                mat.nFaces, mat.ownerStart[mat.nCells]);
         for (int sweep = 0; sweep < 10000; sweep++)
@@ -132,15 +138,16 @@ void test_multiple_N(void) {
     for (int i = 0; i < num_sizes; i++)
     {
         int N = N_s[i];
+        int nCells = N * N * N;
         printf("=== Starting DIA GS for N=%d ===\n", N);
         DIAMatrix dmat;
-        double *b = malloc(sizeof(double) * N * N);
-        double *u_exact = malloc(sizeof(double) * N * N);
+        double *b = malloc(sizeof(double) * nCells);
+        double *u_exact = malloc(sizeof(double) * nCells);
         compute_source(b, N);
         compute_exact(u_exact, N);
         assemble_dia(&dmat, b, N);
-        printf("diag[0]=%.1f  diag[N/2]=%.1f  diag[N*N-1]=%.1f\n",
-               dmat.diag[0], dmat.diag[N / 2], dmat.diag[N * N - 1]);
+        printf("diag[0]=%.1f  diag[nCells/2]=%.1f  diag[nCells-1]=%.1f\n",
+               dmat.diag[0], dmat.diag[nCells / 2], dmat.diag[nCells - 1]);
         for (int sweep = 0; sweep < 10000; sweep++)
         {
             gs_sweep_dia(&dmat);

@@ -1,6 +1,7 @@
 // No upper, lower, uAddr, ownerStart (this is how it differs from LDUMatrix)
 // The off-diagonal coefficient is a single scalar (e.g. -1.0),
 // not an array, because it's the same for every face
+#include <stdio.h>
 typedef struct {
     int N;              // grid dimension (square grid, so N×N cells)
     int nCells;         // number of cells (N*N)
@@ -12,6 +13,7 @@ typedef struct {
 
 void assemble_dia(DIAMatrix *mat, double *source, int N);
 void gs_sweep_dia(DIAMatrix *mat);
+void gs_sweep_dia_trace(DIAMatrix *mat, FILE *fp);
 void free_dia(DIAMatrix *mat);
 
 
