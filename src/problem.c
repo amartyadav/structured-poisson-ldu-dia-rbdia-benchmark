@@ -1,6 +1,8 @@
 #include "problem.h"
 #include <math.h>
 
+#define M_PI 3.14159265358979323846
+
 void compute_source(double *b, int N)
 {
     double h = 1.0 / N;

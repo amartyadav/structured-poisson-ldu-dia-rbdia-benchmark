@@ -149,6 +149,7 @@ void gs_sweep_dia_trace(DIAMatrix *mat, FILE *fp)
             fprintf(fp, "%d", read_array[r]);
         }
         fprintf(fp, "],\"write\":[");
+
         for (int w = 0; w < write_array_idx; w++)
         {
             if (w > 0) fprintf(fp, ",");
