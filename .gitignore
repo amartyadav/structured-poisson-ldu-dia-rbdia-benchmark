@@ -6,3 +6,5 @@ poisson*
 *.log
 
 structured-poisson-ldu-dia-rbdia-benchmark
+
+-O3
