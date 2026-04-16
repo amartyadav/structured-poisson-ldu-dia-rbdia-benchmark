@@ -21,6 +21,10 @@
 
 void test_multiple_N(void);
 void profile_sweeps(int N, int num_sweeps);
+void convergence_test_DIA(int N, double tol, int max_sweeps);
+void convergence_test_RBDIA(int N, double tol, int max_sweeps);
+void convergence_test_combined(int N, double tol, int max_sweeps);
+
 
 int main(int argc, char *argv[]) {
     if (argc > 1 && strcmp(argv[1], "profile") == 0)
@@ -36,6 +40,17 @@ int main(int argc, char *argv[]) {
         profile_sweeps(N, num_sweeps);
 
         LIKWID_MARKER_CLOSE;
+    }
+    else if (argc > 1 && strcmp(argv[1], "convergence") == 0)
+    {
+        int N = 100;
+        double tol = 1e-8;
+        int max_sweeps = 10000;
+        if (argc > 2) N = atoi(argv[2]);
+        if (argc > 3) tol = atof(argv[3]);
+        if (argc > 4) max_sweeps = atoi(argv[4]);
+
+        convergence_test_combined(N, tol, max_sweeps);
     }
     else
     {
@@ -290,4 +305,107 @@ void test_multiple_N(void) {
         free(u_exact);
         printf("=== === ===\n");
     }
+}
+
+void convergence_test_DIA(int N, double tol, int max_sweeps)
+{
+    int sweeps = 0;
+
+    int nCells = N * N * N;
+
+    // DIA Test
+    DIAMatrix diamat;
+    double *bDia = (double *)malloc(sizeof(double) * nCells);
+    double *uExactDia = (double *)malloc(sizeof(double) * nCells);
+
+
+    compute_source(bDia, N);
+    compute_exact(uExactDia, N);
+
+    assemble_dia(&diamat, bDia, N);
+
+    double residual = compute_residual(diamat.psi, bDia, N);
+    printf("Initial residual = %.6e\n", residual);
+
+    while(residual > tol && sweeps < max_sweeps)
+    {
+        gs_sweep_dia(&diamat);
+        sweeps++;
+
+        if(sweeps % 50 == 0)
+        {
+            residual = compute_residual(diamat.psi, bDia, N);
+            printf("Sweep %4d: residual = %.6e\n", sweeps, residual);
+        }
+    }
+
+    if (sweeps >= max_sweeps)
+    {
+        printf("Failed to converge in %d sweeps. Hit the cap.\n", sweeps);
+    }
+
+    // computing L2 error
+    double l2_error = compute_l2_error(diamat.psi, uExactDia, N);
+
+    // "N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e"
+    if(residual < tol) { printf("N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error); }
+
+
+    free_dia(&diamat);
+    free(bDia);
+    free(uExactDia);
+}
+
+void convergence_test_RBDIA(int N, double tol, int max_sweeps)
+{
+    int sweeps = 0;
+
+    int nCells = N * N * N;
+
+    // RBDIA Test
+    RBDIAMatrix rbdiamat;
+    double *b = (double *)malloc(sizeof(double) * nCells);
+    double *u_exact = (double *)malloc(sizeof(double) * nCells);
+
+
+    compute_source(b, N);
+    compute_exact(u_exact, N);
+
+    assemble_rbdia(&rbdiamat, b, N);
+
+    double residual = compute_residual(rbdiamat.psi, b, N);
+    printf("Initial residual = %.6e\n", residual);
+
+    while(residual > tol && sweeps < max_sweeps)
+    {
+        gs_sweep_rbdia(&rbdiamat);
+        sweeps++;
+
+        if(sweeps % 50 == 0)
+        {
+            residual = compute_residual(rbdiamat.psi, b, N);
+            printf("Sweep %4d: residual = %.6e\n", sweeps, residual);
+        }
+    }
+
+    if (sweeps >= max_sweeps)
+    {
+        printf("Failed to converge in %d sweeps. Hit the cap.\n", sweeps);
+    }
+
+    // computing L2 error
+    double l2_error = compute_l2_error(rbdiamat.psi, u_exact, N);
+
+    // "N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e"
+    if(residual < tol) { printf("N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error); }
+
+    free_rbdia(&rbdiamat);
+    free(b);
+    free(u_exact);
+}
+
+void convergence_test_combined(int N, double tol, int max_sweeps)
+{
+    convergence_test_DIA(N, tol, max_sweeps);
+    convergence_test_RBDIA(N, tol, max_sweeps);
 }
