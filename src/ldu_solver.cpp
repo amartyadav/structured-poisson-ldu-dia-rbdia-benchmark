@@ -1,6 +1,6 @@
 // Initiating the setup of the LDU matrix addressing scheme for the solver
 
-#include "ldu_solver.h"
+#include "ldu_solver.hpp"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,14 +12,14 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
     mat->nFaces = 3 * N * N * (N - 1); // ((N - 1) * N * N) + (N * (N - 1) * N) + (N * N * (N - 1));
     mat->nCells = N * N * N;
     mat->nFaces = 3 * N * N * (N-1);
-    mat->diag = calloc(mat->nCells, sizeof(double));
-    mat->upper = malloc(sizeof(double) * mat->nFaces);
-    mat->lower = malloc(sizeof(double) * mat->nFaces);
-    mat->uAddr = malloc(sizeof(int) * mat->nFaces);
-    mat->ownerStart = malloc(sizeof(int) * (mat->nCells + 1));
-    mat->psi = calloc(mat->nCells, sizeof(double)); // initial guess for the solver (solution vector) = 0;
-    mat->bPrime = malloc(sizeof(double) * mat->nCells);
-    mat->source = malloc(sizeof(double) * mat->nCells);
+    mat->diag = (double *)calloc(mat->nCells, sizeof(double));
+    mat->upper = (double *)malloc(sizeof(double) * mat->nFaces);
+    mat->lower = (double *)malloc(sizeof(double) * mat->nFaces);
+    mat->uAddr = (int *)malloc(sizeof(int) * mat->nFaces);
+    mat->ownerStart = (int *)malloc(sizeof(int) * (mat->nCells + 1));
+    mat->psi = (double *)calloc(mat->nCells, sizeof(double)); // initial guess for the solver (solution vector) = 0;
+    mat->bPrime = (double *)malloc(sizeof(double) * mat->nCells);
+    mat->source = (double *)malloc(sizeof(double) * mat->nCells);
 
     // copying the source
     for(int idx = 0; idx < mat->nCells; idx++)
@@ -34,7 +34,7 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
     {
         int k = idx / (N * N);
         int i = (idx / N) % N;
-        int j = idx % N; 
+        int j = idx % N;
 
         // this cells face starts from here
         mat->ownerStart[idx] = f;
@@ -62,7 +62,7 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
             mat->diag[idx+N] += 1.0;
             f++;
         }
-        
+
         if (k < N - 1)
         {
             mat->lower[f] = -1.0;
@@ -80,7 +80,7 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
             int k = idx / (N * N);
             int i = (idx / N) % N;
             int j = idx % N;
-    
+
             if (j == 0)     { mat->diag[idx] += 2.0; }
             if (j == N - 1) { mat->diag[idx] += 2.0; }
             if (i == 0)     { mat->diag[idx] += 2.0; }
