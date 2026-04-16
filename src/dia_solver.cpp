@@ -1,4 +1,4 @@
-#include "dia_solver.h"
+#include "dia_solver.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -6,10 +6,10 @@ void assemble_dia(DIAMatrix *mat, double *source, int N)
 {
     mat->N = N;
     mat->nCells = N * N * N;
-    mat->source = malloc(sizeof(double) * mat->nCells);
-    mat->bPrime = malloc(sizeof(double) * mat->nCells);
-    mat->diag = malloc(sizeof(double) * mat->nCells);
-    mat->psi = calloc(mat->nCells, sizeof(double)); // initial guess for the solver (solution vector) = 0 (hence, calloc);
+    mat->source = (double *)malloc(sizeof(double) * mat->nCells);
+    mat->bPrime = (double *)malloc(sizeof(double) * mat->nCells);
+    mat->diag = (double *)malloc(sizeof(double) * mat->nCells);
+    mat->psi = (double *)calloc(mat->nCells, sizeof(double)); // initial guess for the solver (solution vector) = 0 (hence, calloc);
 
     // copying the source
     for(int idx = 0; idx < mat->nCells; idx++)
