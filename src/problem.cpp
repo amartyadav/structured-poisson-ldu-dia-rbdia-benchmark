@@ -1,4 +1,4 @@
-#include "problem.h"
+#include "problem.hpp"
 #include <math.h>
 
 #define M_PI 3.14159265358979323846
