@@ -8,3 +8,4 @@ poisson*
 structured-poisson-ldu-dia-rbdia-benchmark
 
 -O3
+.vscode/c_cpp_properties.json
