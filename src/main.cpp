@@ -45,12 +45,34 @@ int main(int argc, char *argv[]) {
     {
         int N = 100;
         double tol = 1e-8;
-        int max_sweeps = 10000;
+        int max_sweeps = 20000;
         if (argc > 2) N = atoi(argv[2]);
         if (argc > 3) tol = atof(argv[3]);
         if (argc > 4) max_sweeps = atoi(argv[4]);
 
         convergence_test_combined(N, tol, max_sweeps);
+    }
+    else if (argc > 1 && strcmp(argv[1], "diaconvergence") == 0)
+    {
+        int N = 100;
+        double tol = 1e-15;
+        int max_sweeps = 50000;
+        if (argc > 2) N = atoi(argv[2]);
+        if (argc > 3) tol = atof(argv[3]);
+        if (argc > 4) max_sweeps = atoi(argv[4]);
+
+        convergence_test_DIA(N, tol, max_sweeps);
+    }
+    else if (argc > 1 && strcmp(argv[1], "rbconvergence") == 0)
+    {
+        int N = 100;
+        double tol = 1e-15;
+        int max_sweeps = 50000;
+        if (argc > 2) N = atoi(argv[2]);
+        if (argc > 3) tol = atof(argv[3]);
+        if (argc > 4) max_sweeps = atoi(argv[4]);
+
+        convergence_test_RBDIA(N, tol, max_sweeps);
     }
     else
     {
@@ -347,6 +369,8 @@ void convergence_test_DIA(int N, double tol, int max_sweeps)
     // computing L2 error
     double l2_error = compute_l2_error(diamat.psi, uExactDia, N);
 
+    printf("L2 error at the end of the run: %.6e\n", l2_error);
+
     // "N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e"
     if(residual < tol) { printf("N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error); }
 
@@ -395,6 +419,8 @@ void convergence_test_RBDIA(int N, double tol, int max_sweeps)
 
     // computing L2 error
     double l2_error = compute_l2_error(rbdiamat.psi, u_exact, N);
+
+    printf("L2 error at the end of the run: %.6e\n", l2_error);
 
     // "N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e"
     if(residual < tol) { printf("N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error); }
