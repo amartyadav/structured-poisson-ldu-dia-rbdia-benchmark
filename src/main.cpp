@@ -74,9 +74,32 @@ int main(int argc, char *argv[]) {
 
         convergence_test_RBDIA(N, tol, max_sweeps);
     }
-    else
-    {
-        test_multiple_N();
+    else {
+        printf("\n\n=== USAGE ===\n");
+        printf("./poisson_benchmark [mode] [N] [tolerance] [max_sweeps]\n");
+
+        printf("--- mode           - The mode of the benchmark/run that you require.\n");
+        //print possible options for mode below - 'profile', 'convergence', 'diaconvergence', 'rbdiaconvergence'\n"
+        printf("\n=== MODES ===\n");
+        printf("--- profile             -     !!! ONLY RUN THIS MODE IF COMPILED WITH 'make profile' - Read 'Profiling' section below for details!!!\n");
+        printf("                              Run a profiling session for a given N and number of sweeps. 1st arg = N, 2nd arg = num_sweeps.\n");
+        printf("--- convergence         -     Run a convergence test for both DIA and RBDIA for a given N, tolerance, and max sweeps. Set OMP_NUM_THREADS=n for the OpenMP threads for RB DIA\n");
+        printf("--- diaconvergence      -     Run a convergence test for DIA only for a given N, tolerance, and max sweeps.\n");
+        printf("--- rbdiaconvergence    -     Run a convergence test for RBDIA only for a given N, tolerance, and max sweeps. Set OMP_NUM_THREADS=n for the OpenMP threads for RB DIA\n");
+
+        printf("\n=== N ===\n");
+        printf("The number of cells in each direction. Total cells = N^3. Default is 100.\n");
+
+        printf("\n=== tolerance ===\n");
+        printf("The residual tolerance for convergence tests. Default is 1e-8 for combined convergence, and 1e-15 for DIA and RBDIA individual convergence tests.\n");
+
+        printf("\n=== max_sweeps ===\n");
+        printf("The maximum number of sweeps to perform in convergence tests before giving up. Default is 20000 for combined convergence, and 50000 for DIA and RBDIA individual convergence tests.\n");
+
+        printf("\n=== PROFILING ===\n");
+        printf("'profile' mode will run a profiling session for a given N and number of sweeps. It will print the working set size for both DIA and LDU, and then run the specified number of sweeps for each solver while timing them with LIKWID markers. The residual after the sweeps will also be printed.\n\n");
+        printf("NOTE: 'profile' mode should only be run if the code is compiled with 'make profile', which enables LIKWID performance monitoring. Running 'profile' mode without LIKWID support will not give meaningful results. Also, profiling mode creates three binaries - O1, O2, and O3. Run accordingly.\n");
+    
     }
     return 0;
 }
@@ -88,43 +111,43 @@ void profile_sweeps(int N, int num_sweeps) {
     printf("=== Profiling run: N=%d, sweeps=%d ===\n", N, num_sweeps);
     printf("Working set (DIA): ~%.1f MB\n",
            (4.0 * nCells * sizeof(double)) / (1024.0 * 1024.0));
-    // printf("Working set (LDU): ~%.1f MB\n",
-    //        (4.0 * nCells * sizeof(double)
-    //         + 3.0 * nFaces * sizeof(double)
-    //         + nFaces * sizeof(int)
-    //         + (nCells + 1) * sizeof(int))
-    //        / (1024.0 * 1024.0));
+     printf("Working set (LDU): ~%.1f MB\n",
+            (4.0 * nCells * sizeof(double)
+             + 3.0 * nFaces * sizeof(double)
+             + nFaces * sizeof(int)
+             + (nCells + 1) * sizeof(int))
+            / (1024.0 * 1024.0));
 
     double *b = (double*)malloc(sizeof(double) * nCells);
     compute_source(b, N);
 
     // --- LDU solver ---
-    // LDUMatrix ldu;
-    // assemble_ldu(&ldu, b, N);
-    // printf("\n--- LDU solver: %d sweeps ---\n", num_sweeps);
+    LDUMatrix ldu;
+    assemble_ldu(&ldu, b, N);
+    printf("\n--- LDU solver: %d sweeps ---\n", num_sweeps);
 
-    // LIKWID_MARKER_START("LDU_sweep");
-    // for (int s = 0; s < num_sweeps; s++)
-    // {
-    //     static double totalSweepTimeLDU = 0.0;
-    //     static int totalCallsLDU = 0;
-    //     auto t0LDU = std::chrono::high_resolution_clock::now();
-    //     gs_sweep_ldu(&ldu);
-    //     auto t1LDU = std::chrono::high_resolution_clock::now();
-    //     totalSweepTimeLDU += std::chrono::duration<double>(t1LDU - t0LDU).count();
-    //     totalCallsLDU++;
-    //     if (totalCallsLDU % 1000 == 0)
-    //     {
-    //         std::cout << "LDU_sweep: totalTime=" << totalSweepTimeLDU
-    //             << "s calls=" << totalCallsLDU << std::endl;
-    //     }
-    // }
-    // LIKWID_MARKER_STOP("LDU_sweep");
+    LIKWID_MARKER_START("LDU_sweep");
+    for (int s = 0; s < num_sweeps; s++)
+    {
+        static double totalSweepTimeLDU = 0.0;
+        static int totalCallsLDU = 0;
+        auto t0LDU = std::chrono::high_resolution_clock::now();
+        gs_sweep_ldu(&ldu);
+        auto t1LDU = std::chrono::high_resolution_clock::now();
+        totalSweepTimeLDU += std::chrono::duration<double>(t1LDU - t0LDU).count();
+        totalCallsLDU++;
+        if (totalCallsLDU % 1000 == 0)
+        {
+            std::cout << "LDU_sweep: totalTime=" << totalSweepTimeLDU
+                << "s calls=" << totalCallsLDU << std::endl;
+        }
+    }
+    LIKWID_MARKER_STOP("LDU_sweep");
 
 
-    // double res_ldu = compute_residual(ldu.psi, b, N);
-    // printf("LDU residual after %d sweeps: %.6e\n", num_sweeps, res_ldu);
-    // free_ldu(&ldu);
+    double res_ldu = compute_residual(ldu.psi, b, N);
+    printf("LDU residual after %d sweeps: %.6e\n", num_sweeps, res_ldu);
+    free_ldu(&ldu);
 
     // --- DIA solver ---
     DIAMatrix dia;
@@ -184,150 +207,150 @@ void profile_sweeps(int N, int num_sweeps) {
     printf("\n=== Profiling complete ===\n");
 }
 
-void test_multiple_N(void) {
-    int N_s[] = {4, 6, 8, 12, 16, 20};
-    int num_sizes = 6;
+// void test_multiple_N(void) {
+//     int N_s[] = {4, 6, 8, 12, 16, 20};
+//     int num_sizes = 6;
 
-    printf("=== LDU Solver Runs ===\n\n");
-    for (int i = 0; i < num_sizes; i++)
-    {
-        int N = N_s[i];
-        int nCells = N * N * N;
-        printf("=== Starting LDU GS for N=%d ===\n", N);
-        LDUMatrix mat;
-        double *b = (double *)malloc(sizeof(double) * nCells);
-        double *u_exact = (double *)malloc(sizeof(double) * nCells);
-        compute_source(b, N);
-        compute_exact(u_exact, N);
-        assemble_ldu(&mat, b, N);
-        printf("diag[0]=%.1f  diag[nCells/2]=%.1f  diag[nCells-1]=%.1f\n",
-               mat.diag[0], mat.diag[nCells / 2], mat.diag[nCells - 1]);
-        printf("nFaces expected=%d  ownerStart[nCells]=%d\n",
-               mat.nFaces, mat.ownerStart[mat.nCells]);
-        for (int sweep = 0; sweep < 1000; sweep++)
-        {
-            static double totalSweepTimeLDU = 0.0;
-            static int totalCallsLDU = 0;
-            auto t0LDU = std::chrono::high_resolution_clock::now();
-            gs_sweep_ldu(&mat);
-            auto t1LDU = std::chrono::high_resolution_clock::now();
-            totalSweepTimeLDU += std::chrono::duration<double>(t1LDU - t0LDU).count();
-            totalCallsLDU++;
-            if (totalCallsLDU % 1000 == 0)
-            {
-                std::cout << "LDU_sweep: totalTime=" << totalSweepTimeLDU
-                    << "s calls=" << totalCallsLDU << std::endl;
-            }
-            if (sweep % 500 == 0)
-            {
-                double res = compute_residual(mat.psi, b, N);
-                printf("Sweep %4d: residual = %.6e\n", sweep, res);
-                if (res < 1e-14)
-                {
-                    break;
-                }
-            }
-        }
-        double l2 = compute_l2_error(mat.psi, u_exact, N);
-        printf("L2 error = %.6e\n", l2);
-        free_ldu(&mat);
-        free(b);
-        free(u_exact);
-        printf("=== === ===\n");
-    }
+//     printf("=== LDU Solver Runs ===\n\n");
+//     for (int i = 0; i < num_sizes; i++)
+//     {
+//         int N = N_s[i];
+//         int nCells = N * N * N;
+//         printf("=== Starting LDU GS for N=%d ===\n", N);
+//         LDUMatrix mat;
+//         double *b = (double *)malloc(sizeof(double) * nCells);
+//         double *u_exact = (double *)malloc(sizeof(double) * nCells);
+//         compute_source(b, N);
+//         compute_exact(u_exact, N);
+//         assemble_ldu(&mat, b, N);
+//         printf("diag[0]=%.1f  diag[nCells/2]=%.1f  diag[nCells-1]=%.1f\n",
+//                mat.diag[0], mat.diag[nCells / 2], mat.diag[nCells - 1]);
+//         printf("nFaces expected=%d  ownerStart[nCells]=%d\n",
+//                mat.nFaces, mat.ownerStart[mat.nCells]);
+//         for (int sweep = 0; sweep < 1000; sweep++)
+//         {
+//             static double totalSweepTimeLDU = 0.0;
+//             static int totalCallsLDU = 0;
+//             auto t0LDU = std::chrono::high_resolution_clock::now();
+//             gs_sweep_ldu(&mat);
+//             auto t1LDU = std::chrono::high_resolution_clock::now();
+//             totalSweepTimeLDU += std::chrono::duration<double>(t1LDU - t0LDU).count();
+//             totalCallsLDU++;
+//             if (totalCallsLDU % 1000 == 0)
+//             {
+//                 std::cout << "LDU_sweep: totalTime=" << totalSweepTimeLDU
+//                     << "s calls=" << totalCallsLDU << std::endl;
+//             }
+//             if (sweep % 500 == 0)
+//             {
+//                 double res = compute_residual(mat.psi, b, N);
+//                 printf("Sweep %4d: residual = %.6e\n", sweep, res);
+//                 if (res < 1e-14)
+//                 {
+//                     break;
+//                 }
+//             }
+//         }
+//         double l2 = compute_l2_error(mat.psi, u_exact, N);
+//         printf("L2 error = %.6e\n", l2);
+//         free_ldu(&mat);
+//         free(b);
+//         free(u_exact);
+//         printf("=== === ===\n");
+//     }
 
-    printf("\n=== DIA Solver Runs ===\n\n");
-    for (int i = 0; i < num_sizes; i++)
-    {
-        int N = N_s[i];
-        int nCells = N * N * N;
-        printf("=== Starting DIA GS for N=%d ===\n", N);
-        DIAMatrix dmat;
-        double *b = (double *)malloc(sizeof(double) * nCells);
-        double *u_exact = (double *)malloc(sizeof(double) * nCells);
-        compute_source(b, N);
-        compute_exact(u_exact, N);
-        assemble_dia(&dmat, b, N);
-        printf("diag[0]=%.1f  diag[nCells/2]=%.1f  diag[nCells-1]=%.1f\n",
-               dmat.diag[0], dmat.diag[nCells / 2], dmat.diag[nCells - 1]);
-        for (int sweep = 0; sweep < 10000; sweep++)
-        {
-            static double totalSweepTimeDIA = 0.0;
-            static int totalCallsDIA = 0;
-            auto t0DIA = std::chrono::high_resolution_clock::now();
-            gs_sweep_dia(&dmat);
-            auto t1DIA = std::chrono::high_resolution_clock::now();
-            totalSweepTimeDIA += std::chrono::duration<double>(t1DIA - t0DIA).count();
-            totalCallsDIA++;
-            if (totalCallsDIA % 1000 == 0)
-            {
-                std::cout << "DIA_sweep: totalTime=" << totalSweepTimeDIA
-                    << "s calls=" << totalCallsDIA << std::endl;
-            }
-            if (sweep % 500 == 0)
-            {
-                double res = compute_residual(dmat.psi, b, N);
-                printf("Sweep %4d: residual = %.6e\n", sweep, res);
-                if (res < 1e-14)
-                {
-                    break;
-                }
-            }
-        }
-        double l2 = compute_l2_error(dmat.psi, u_exact, N);
-        printf("L2 error = %.6e\n", l2);
-        free_dia(&dmat);
-        free(b);
-        free(u_exact);
-        printf("=== === ===\n");
-    }
+//     printf("\n=== DIA Solver Runs ===\n\n");
+//     for (int i = 0; i < num_sizes; i++)
+//     {
+//         int N = N_s[i];
+//         int nCells = N * N * N;
+//         printf("=== Starting DIA GS for N=%d ===\n", N);
+//         DIAMatrix dmat;
+//         double *b = (double *)malloc(sizeof(double) * nCells);
+//         double *u_exact = (double *)malloc(sizeof(double) * nCells);
+//         compute_source(b, N);
+//         compute_exact(u_exact, N);
+//         assemble_dia(&dmat, b, N);
+//         printf("diag[0]=%.1f  diag[nCells/2]=%.1f  diag[nCells-1]=%.1f\n",
+//                dmat.diag[0], dmat.diag[nCells / 2], dmat.diag[nCells - 1]);
+//         for (int sweep = 0; sweep < 10000; sweep++)
+//         {
+//             static double totalSweepTimeDIA = 0.0;
+//             static int totalCallsDIA = 0;
+//             auto t0DIA = std::chrono::high_resolution_clock::now();
+//             gs_sweep_dia(&dmat);
+//             auto t1DIA = std::chrono::high_resolution_clock::now();
+//             totalSweepTimeDIA += std::chrono::duration<double>(t1DIA - t0DIA).count();
+//             totalCallsDIA++;
+//             if (totalCallsDIA % 1000 == 0)
+//             {
+//                 std::cout << "DIA_sweep: totalTime=" << totalSweepTimeDIA
+//                     << "s calls=" << totalCallsDIA << std::endl;
+//             }
+//             if (sweep % 500 == 0)
+//             {
+//                 double res = compute_residual(dmat.psi, b, N);
+//                 printf("Sweep %4d: residual = %.6e\n", sweep, res);
+//                 if (res < 1e-14)
+//                 {
+//                     break;
+//                 }
+//             }
+//         }
+//         double l2 = compute_l2_error(dmat.psi, u_exact, N);
+//         printf("L2 error = %.6e\n", l2);
+//         free_dia(&dmat);
+//         free(b);
+//         free(u_exact);
+//         printf("=== === ===\n");
+//     }
 
-    printf("\n=== RBDIA Solver Runs ===\n\n");
-    for (int i = 0; i < num_sizes; i++)
-    {
-        int N = N_s[i];
-        int nCells = N * N * N;
-        printf("=== Starting RBDIA GS for N=%d ===\n", N);
-        RBDIAMatrix dmat;
-        double *b = (double *)malloc(sizeof(double) * nCells);
-        double *u_exact = (double *)malloc(sizeof(double) * nCells);
-        compute_source(b, N);
-        compute_exact(u_exact, N);
-        assemble_rbdia(&dmat, b, N);
-        printf("diag[0]=%.1f  diag[nCells/2]=%.1f  diag[nCells-1]=%.1f\n",
-               dmat.diag[0], dmat.diag[nCells / 2], dmat.diag[nCells - 1]);
-        for (int sweep = 0; sweep < 10000; sweep++)
-        {
-            static double totalSweepTimeRBDIA = 0.0;
-            static int totalCallsRBDIA = 0;
-            auto t0RBDIA = std::chrono::high_resolution_clock::now();
-            gs_sweep_rbdia(&dmat);
-            auto t1RBDIA = std::chrono::high_resolution_clock::now();
-            totalSweepTimeRBDIA += std::chrono::duration<double>(t1RBDIA - t0RBDIA).count();
-            totalCallsRBDIA++;
-            if (totalCallsRBDIA % 1000 == 0)
-            {
-                std::cout << "RBDIA_sweep: totalTime=" << totalSweepTimeRBDIA
-                    << "s calls=" << totalCallsRBDIA << std::endl;
-            }
-            if (sweep % 500 == 0)
-            {
-                double res = compute_residual(dmat.psi, b, N);
-                printf("Sweep %4d: residual = %.6e\n", sweep, res);
-                if (res < 1e-14)
-                {
-                    break;
-                }
-            }
-        }
-        double l2 = compute_l2_error(dmat.psi, u_exact, N);
-        printf("L2 error = %.6e\n", l2);
-        free_rbdia(&dmat);
-        free(b);
-        free(u_exact);
-        printf("=== === ===\n");
-    }
-}
+//     printf("\n=== RBDIA Solver Runs ===\n\n");
+//     for (int i = 0; i < num_sizes; i++)
+//     {
+//         int N = N_s[i];
+//         int nCells = N * N * N;
+//         printf("=== Starting RBDIA GS for N=%d ===\n", N);
+//         RBDIAMatrix dmat;
+//         double *b = (double *)malloc(sizeof(double) * nCells);
+//         double *u_exact = (double *)malloc(sizeof(double) * nCells);
+//         compute_source(b, N);
+//         compute_exact(u_exact, N);
+//         assemble_rbdia(&dmat, b, N);
+//         printf("diag[0]=%.1f  diag[nCells/2]=%.1f  diag[nCells-1]=%.1f\n",
+//                dmat.diag[0], dmat.diag[nCells / 2], dmat.diag[nCells - 1]);
+//         for (int sweep = 0; sweep < 10000; sweep++)
+//         {
+//             static double totalSweepTimeRBDIA = 0.0;
+//             static int totalCallsRBDIA = 0;
+//             auto t0RBDIA = std::chrono::high_resolution_clock::now();
+//             gs_sweep_rbdia(&dmat);
+//             auto t1RBDIA = std::chrono::high_resolution_clock::now();
+//             totalSweepTimeRBDIA += std::chrono::duration<double>(t1RBDIA - t0RBDIA).count();
+//             totalCallsRBDIA++;
+//             if (totalCallsRBDIA % 1000 == 0)
+//             {
+//                 std::cout << "RBDIA_sweep: totalTime=" << totalSweepTimeRBDIA
+//                     << "s calls=" << totalCallsRBDIA << std::endl;
+//             }
+//             if (sweep % 500 == 0)
+//             {
+//                 double res = compute_residual(dmat.psi, b, N);
+//                 printf("Sweep %4d: residual = %.6e\n", sweep, res);
+//                 if (res < 1e-14)
+//                 {
+//                     break;
+//                 }
+//             }
+//         }
+//         double l2 = compute_l2_error(dmat.psi, u_exact, N);
+//         printf("L2 error = %.6e\n", l2);
+//         free_rbdia(&dmat);
+//         free(b);
+//         free(u_exact);
+//         printf("=== === ===\n");
+//     }
+// }
 
 void convergence_test_DIA(int N, double tol, int max_sweeps)
 {
