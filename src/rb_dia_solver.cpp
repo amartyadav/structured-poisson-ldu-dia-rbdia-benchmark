@@ -1,6 +1,7 @@
 #include "rb_dia_solver.hpp"
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 void assemble_rbdia(RBDIAMatrix *mat, double *source, int N)
 {
@@ -53,6 +54,8 @@ void gs_sweep_rbdia(RBDIAMatrix *mat)
     #pragma omp parallel for
     for(int idx = 0; idx < mat->nCells; idx++)
     {
+        // if(omp_get_thread_num() == 0) { printf("Total running threads = %d", omp_get_num_threads());;}
+
         int k = idx / (N * N);
         int i = (idx / N) % N;
         int j = idx % N;
@@ -79,6 +82,8 @@ void gs_sweep_rbdia(RBDIAMatrix *mat)
     #pragma omp parallel for
     for(int idx = 0; idx < mat->nCells; idx++)
     {
+        // if(omp_get_thread_num() == 0) { printf("Total running threads = %d", omp_get_num_threads());;}
+
         int k = idx / (N*N);
         int i = (idx / N) % N;
         int j = idx % N;
