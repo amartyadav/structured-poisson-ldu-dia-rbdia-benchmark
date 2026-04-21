@@ -2,16 +2,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/// @brief Assemble DIA storage for a 3D Laplacian system on an N x N x N grid.
+/// @param mat Output matrix container; internal arrays are allocated and initialized.
+/// @param source Right-hand-side vector of length N^3.
+/// @param N Grid resolution per dimension.
 void assemble_dia(DIAMatrix *mat, double *source, int N)
 {
+    // Store mesh metadata used by all sweep routines.
     mat->N = N;
     mat->nCells = N * N * N;
+
+    // Allocate contiguous arrays for source, transformed RHS, diagonal, and solution.
     mat->source = (double *)malloc(sizeof(double) * mat->nCells);
     mat->bPrime = (double *)malloc(sizeof(double) * mat->nCells);
     mat->diag = (double *)malloc(sizeof(double) * mat->nCells);
-    mat->psi = (double *)calloc(mat->nCells, sizeof(double)); // initial guess for the solver (solution vector) = 0 (hence, calloc);
+    mat->psi = (double *)calloc(mat->nCells, sizeof(double)); // Initial guess is zero.
 
-    // copying the source
+    // Copy source into owned storage so caller memory can be independent.
     for (int idx = 0; idx < mat->nCells; idx++)
     {
         mat->source[idx] = source[idx];
@@ -25,10 +32,13 @@ void assemble_dia(DIAMatrix *mat, double *source, int N)
 
     for (int cell = 0; cell < mat->nCells; cell++)
     {
+        // Flattened index -> (k, i, j) coordinates.
         int k = cell / (N * N);
         int i = (cell / N) % N;
         int j = cell % N;
 
+        // Interior 7-point stencil diagonal is 6.0.
+        // Boundary planes increase the diagonal to encode Dirichlet treatment.
         mat->diag[cell] = 6.0;
         if (j == 0)
         {
@@ -57,11 +67,13 @@ void assemble_dia(DIAMatrix *mat, double *source, int N)
     }
 }
 
-// updated gs_sweep_dia for 3d version, without the explicit handling for edge cases.
+/// @brief Perform one forward Gauss-Seidel sweep using DIA-style neighbor access.
+/// @param mat Matrix and vectors for the current nonlinear/linear iteration state.
 void gs_sweep_dia(DIAMatrix *mat)
 {
     int N = mat->N;
 
+    // Reset transformed RHS from the original source each sweep.
     for (int idx = 0; idx < mat->nCells; idx++)
     {
         mat->bPrime[idx] = mat->source[idx];
@@ -69,13 +81,15 @@ void gs_sweep_dia(DIAMatrix *mat)
 
     for (int idx = 0; idx < mat->nCells; idx++)
     {
+        // Flattened index -> (k, i, j) coordinates.
         int k = idx / (N * N);
         int i = (idx / N) % N;
         int j = idx % N;
 
+        // Start from current RHS contribution for this row.
         double psii = mat->bPrime[idx];
 
-        // upper triangle pull
+        // Upper-triangular pull: read not-yet-updated forward neighbors.
         if (j < N - 1)
         {
             psii -= -1.0 * mat->psi[idx + 1];
@@ -89,9 +103,10 @@ void gs_sweep_dia(DIAMatrix *mat)
             psii -= -1.0 * mat->psi[idx + N * N];
         }
 
+        // Diagonal scaling for the new solution value.
         psii /= mat->diag[idx];
 
-        // lower triangle push
+        // Lower-triangular push: propagate effect of psi_i into later bPrime entries.
         if (j < N - 1)
         {
             mat->bPrime[idx + 1] -= -1.0 * psii;
@@ -105,15 +120,19 @@ void gs_sweep_dia(DIAMatrix *mat)
             mat->bPrime[idx + N * N] -= -1.0 * psii;
         }
 
+        // Store updated solution component.
         mat->psi[idx] = psii;
     }
 }
 
-// function to enable and store memory tracing for visualisation
+/// @brief Gauss-Seidel sweep with read/write index tracing for visualization/profiling.
+/// @param mat Matrix and vectors for the current iteration state.
+/// @param fp Output stream receiving one JSON line per processed cell.
 void gs_sweep_dia_trace(DIAMatrix *mat, FILE *fp)
 {
     int N = mat->N;
 
+    // Reset transformed RHS from source before this sweep.
     for (int idx = 0; idx < mat->nCells; idx++)
     {
         mat->bPrime[idx] = mat->source[idx];
@@ -121,10 +140,12 @@ void gs_sweep_dia_trace(DIAMatrix *mat, FILE *fp)
 
     for (int idx = 0; idx < mat->nCells; idx++)
     {
+        // Flattened index -> (k, i, j) coordinates.
         int k = idx / (N * N);
         int i = (idx / N) % N;
         int j = idx % N;
 
+        // At most three neighbors in +j, +i, +k directions are touched.
         int read_array[3];
         int write_array[3];
         int read_array_idx = 0;
@@ -132,8 +153,7 @@ void gs_sweep_dia_trace(DIAMatrix *mat, FILE *fp)
 
         double psii = mat->bPrime[idx];
 
-        // upper triangle pull
-        // also writing the indices being accessed to the file
+        // Upper-triangular pull and read-index capture.
         if (j < N - 1)
         {
             psii -= -1.0 * mat->psi[idx + 1];
@@ -155,7 +175,7 @@ void gs_sweep_dia_trace(DIAMatrix *mat, FILE *fp)
 
         psii /= mat->diag[idx];
 
-        // lower triangle push
+        // Lower-triangular push and write-index capture.
         if (j < N - 1)
         {
             mat->bPrime[idx + 1] -= -1.0 * psii;
@@ -177,6 +197,7 @@ void gs_sweep_dia_trace(DIAMatrix *mat, FILE *fp)
 
         mat->psi[idx] = psii;
 
+        // Emit JSON trace for this cell: solver tag, cell index, read list, write list.
         fprintf(fp, "{\"solver\":\"DIA\",\"cell\":%d,\"read\":[", idx);
         for (int r = 0; r < read_array_idx; r++)
         {
@@ -196,6 +217,8 @@ void gs_sweep_dia_trace(DIAMatrix *mat, FILE *fp)
     }
 }
 
+/// @brief Release all heap-allocated arrays owned by the DIA matrix container.
+/// @param mat Matrix whose internal buffers are deallocated.
 void free_dia(DIAMatrix *mat)
 {
     free(mat->bPrime);

@@ -18,18 +18,40 @@
 #define LIKWID_MARKER_CLOSE
 #endif
 
+/// @brief Optional legacy multi-size test hook (currently disabled in this file).
 void test_multiple_N(void);
+/// @brief Run fixed-count sweep profiling for LDU, DIA, and RBDIA solvers.
+/// @param N Grid resolution per dimension.
+/// @param num_sweeps Number of GS sweeps to execute per solver.
 void profile_sweeps(int N, int num_sweeps);
+/// @brief Run DIA-only convergence test to a residual tolerance.
+/// @param N Grid resolution per dimension.
+/// @param tol Residual tolerance.
+/// @param max_sweeps Maximum sweep budget.
 void convergence_test_DIA(int N, double tol, int max_sweeps);
+/// @brief Run RBDIA-only convergence test to a residual tolerance.
+/// @param N Grid resolution per dimension.
+/// @param tol Residual tolerance.
+/// @param max_sweeps Maximum sweep budget.
 void convergence_test_RBDIA(int N, double tol, int max_sweeps);
+/// @brief Run DIA and RBDIA convergence tests back-to-back.
+/// @param N Grid resolution per dimension.
+/// @param tol Residual tolerance.
+/// @param max_sweeps Maximum sweep budget.
 void convergence_test_combined(int N, double tol, int max_sweeps);
 
+/// @brief CLI entry point selecting profiling or convergence workflows.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @return Exit code (0 on normal completion).
 int main(int argc, char *argv[])
 {
+    // Profile mode: fixed number of sweeps with LIKWID markers and timing output.
     if (argc > 1 && strcmp(argv[1], "profile") == 0)
     {
         int N = 100;
         int num_sweeps = 1000;
+        // Optional overrides: argv[2]=N, argv[3]=num_sweeps.
         if (argc > 2)
             N = atoi(argv[2]);
         if (argc > 3)
@@ -42,11 +64,13 @@ int main(int argc, char *argv[])
 
         LIKWID_MARKER_CLOSE;
     }
+    // Combined convergence mode: DIA + RBDIA with shared tolerances.
     else if (argc > 1 && strcmp(argv[1], "convergence") == 0)
     {
         int N = 100;
         double tol = 1e-8;
         int max_sweeps = 20000;
+        // Optional overrides: argv[2]=N, argv[3]=tol, argv[4]=max_sweeps.
         if (argc > 2)
             N = atoi(argv[2]);
         if (argc > 3)
@@ -56,11 +80,13 @@ int main(int argc, char *argv[])
 
         convergence_test_combined(N, tol, max_sweeps);
     }
+    // DIA-only convergence mode.
     else if (argc > 1 && strcmp(argv[1], "diaconvergence") == 0)
     {
         int N = 100;
         double tol = 1e-15;
         int max_sweeps = 50000;
+        // Optional overrides: argv[2]=N, argv[3]=tol, argv[4]=max_sweeps.
         if (argc > 2)
             N = atoi(argv[2]);
         if (argc > 3)
@@ -70,11 +96,13 @@ int main(int argc, char *argv[])
 
         convergence_test_DIA(N, tol, max_sweeps);
     }
+    // RBDIA-only convergence mode.
     else if (argc > 1 && strcmp(argv[1], "rbconvergence") == 0)
     {
         int N = 100;
         double tol = 1e-15;
         int max_sweeps = 50000;
+        // Optional overrides: argv[2]=N, argv[3]=tol, argv[4]=max_sweeps.
         if (argc > 2)
             N = atoi(argv[2]);
         if (argc > 3)
@@ -86,6 +114,7 @@ int main(int argc, char *argv[])
     }
     else
     {
+        // Help/usage output when no valid mode is provided.
         printf("\n\n=== USAGE ===\n");
         printf("./poisson_benchmark [mode] [N] [tolerance] [max_sweeps]\n");
 
@@ -114,8 +143,12 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+/// @brief Execute a profiling campaign for all solver variants at fixed sweep count.
+/// @param N Grid resolution per dimension.
+/// @param num_sweeps Number of sweeps to run for each solver.
 void profile_sweeps(int N, int num_sweeps)
 {
+    // Problem size and topology summary for memory estimates.
     int nCells = N * N * N;
     int nFaces = 3 * N * N * (N - 1);
 
@@ -125,10 +158,11 @@ void profile_sweeps(int N, int num_sweeps)
     printf("Working set (LDU): ~%.1f MB\n",
            (4.0 * nCells * sizeof(double) + 3.0 * nFaces * sizeof(double) + nFaces * sizeof(int) + (nCells + 1) * sizeof(int)) / (1024.0 * 1024.0));
 
+    // Common manufactured RHS used by all solver variants.
     double *b = (double *)malloc(sizeof(double) * nCells);
     compute_source(b, N);
 
-    // --- LDU solver ---
+    // LDU sweep loop with marker region and per-call wall-clock accounting.
     LDUMatrix ldu;
     assemble_ldu(&ldu, b, N);
     printf("\n--- LDU solver: %d sweeps ---\n", num_sweeps);
@@ -155,7 +189,7 @@ void profile_sweeps(int N, int num_sweeps)
     printf("LDU residual after %d sweeps: %.6e\n", num_sweeps, res_ldu);
     free_ldu(&ldu);
 
-    // --- DIA solver ---
+    // DIA sweep loop with marker region and aggregate timing.
     DIAMatrix dia;
     assemble_dia(&dia, b, N);
     printf("\n--- DIA solver: %d sweeps ---\n", num_sweeps);
@@ -180,7 +214,7 @@ void profile_sweeps(int N, int num_sweeps)
     printf("DIA residual after %d sweeps: %.6e\n", num_sweeps, res_dia);
     free_dia(&dia);
 
-    // --- RBDIA solver ---
+    // RBDIA sweep loop with marker region and aggregate timing.
     RBDIAMatrix rbdia;
     assemble_rbdia(&rbdia, b, N);
     printf("\n--- RBDIA solver: %d sweeps ---\n", num_sweeps);
@@ -354,13 +388,17 @@ void profile_sweeps(int N, int num_sweeps)
 //     }
 // }
 
+/// @brief Run DIA sweeps until residual tolerance or sweep cap is reached.
+/// @param N Grid resolution per dimension.
+/// @param tol Target residual tolerance.
+/// @param max_sweeps Maximum allowed sweep count.
 void convergence_test_DIA(int N, double tol, int max_sweeps)
 {
     int sweeps = 0;
 
     int nCells = N * N * N;
 
-    // DIA Test
+    // Allocate problem data and initialize DIA system.
     DIAMatrix diamat;
     double *bDia = (double *)malloc(sizeof(double) * nCells);
     double *uExactDia = (double *)malloc(sizeof(double) * nCells);
@@ -373,6 +411,7 @@ void convergence_test_DIA(int N, double tol, int max_sweeps)
     double residual = compute_residual(diamat.psi, bDia, N);
     printf("Initial residual = %.6e\n", residual);
 
+    // Sweep until converged or capped; print residual periodically.
     while (residual > tol && sweeps < max_sweeps)
     {
         gs_sweep_dia(&diamat);
@@ -390,7 +429,7 @@ void convergence_test_DIA(int N, double tol, int max_sweeps)
         printf("Failed to converge in %d sweeps. Hit the cap.\n", sweeps);
     }
 
-    // computing L2 error
+    // Report final accuracy against manufactured exact solution.
     double l2_error = compute_l2_error(diamat.psi, uExactDia, N);
 
     printf("L2 error at the end of the run: %.6e\n", l2_error);
@@ -406,13 +445,17 @@ void convergence_test_DIA(int N, double tol, int max_sweeps)
     free(uExactDia);
 }
 
+/// @brief Run RBDIA sweeps until residual tolerance or sweep cap is reached.
+/// @param N Grid resolution per dimension.
+/// @param tol Target residual tolerance.
+/// @param max_sweeps Maximum allowed sweep count.
 void convergence_test_RBDIA(int N, double tol, int max_sweeps)
 {
     int sweeps = 0;
 
     int nCells = N * N * N;
 
-    // RBDIA Test
+    // Allocate problem data and initialize RBDIA system.
     RBDIAMatrix rbdiamat;
     double *b = (double *)malloc(sizeof(double) * nCells);
     double *u_exact = (double *)malloc(sizeof(double) * nCells);
@@ -425,6 +468,7 @@ void convergence_test_RBDIA(int N, double tol, int max_sweeps)
     double residual = compute_residual(rbdiamat.psi, b, N);
     printf("Initial residual = %.6e\n", residual);
 
+    // Sweep until converged or capped; print residual periodically.
     while (residual > tol && sweeps < max_sweeps)
     {
         gs_sweep_rbdia(&rbdiamat);
@@ -442,7 +486,7 @@ void convergence_test_RBDIA(int N, double tol, int max_sweeps)
         printf("Failed to converge in %d sweeps. Hit the cap.\n", sweeps);
     }
 
-    // computing L2 error
+    // Report final accuracy against manufactured exact solution.
     double l2_error = compute_l2_error(rbdiamat.psi, u_exact, N);
 
     printf("L2 error at the end of the run: %.6e\n", l2_error);
@@ -458,6 +502,10 @@ void convergence_test_RBDIA(int N, double tol, int max_sweeps)
     free(u_exact);
 }
 
+/// @brief Convenience wrapper to run both solver convergence tests sequentially.
+/// @param N Grid resolution per dimension.
+/// @param tol Target residual tolerance.
+/// @param max_sweeps Maximum allowed sweep count.
 void convergence_test_combined(int N, double tol, int max_sweeps)
 {
     convergence_test_DIA(N, tol, max_sweeps);

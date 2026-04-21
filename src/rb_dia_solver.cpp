@@ -3,16 +3,23 @@
 #include <stdlib.h>
 #include <omp.h>
 
+/// @brief Assemble storage for red-black DIA Gauss-Seidel on a 3D structured grid.
+/// @param mat Output matrix container; internal arrays are allocated and initialized.
+/// @param source Right-hand-side vector of length N^3.
+/// @param N Grid resolution per dimension.
 void assemble_rbdia(RBDIAMatrix *mat, double *source, int N)
 {
+    // Store mesh metadata used by sweep routines.
     mat->N = N;
     mat->nCells = N * N * N;
+
+    // Allocate contiguous arrays for source, transformed RHS, diagonal, and solution.
     mat->source = (double *)malloc(sizeof(double) * mat->nCells);
     mat->bPrime = (double *)malloc(sizeof(double) * mat->nCells);
     mat->diag = (double *)malloc(sizeof(double) * mat->nCells);
-    mat->psi = (double *)calloc(mat->nCells, sizeof(double)); // initial guess for the solver (solution vector) = 0 (hence, calloc);
+    mat->psi = (double *)calloc(mat->nCells, sizeof(double)); // Initial guess is zero.
 
-    // copying the source
+    // Copy source into owned storage so caller memory can be managed independently.
     for (int idx = 0; idx < mat->nCells; idx++)
     {
         mat->source[idx] = source[idx];
@@ -26,10 +33,13 @@ void assemble_rbdia(RBDIAMatrix *mat, double *source, int N)
 
     for (int cell = 0; cell < mat->nCells; cell++)
     {
+        // Flattened index -> (k, i, j) coordinates.
         int k = cell / (N * N);
         int i = (cell / N) % N;
         int j = cell % N;
 
+        // Interior 7-point stencil diagonal is 6.0.
+        // Boundary planes increase the diagonal to encode Dirichlet treatment.
         mat->diag[cell] = 6.0;
         if (j == 0)
         {
@@ -58,32 +68,36 @@ void assemble_rbdia(RBDIAMatrix *mat, double *source, int N)
     }
 }
 
-// updated gs_sweep_dia for 3d version, without the explicit handling for edge cases.
+/// @brief Perform one red-black Gauss-Seidel sweep with OpenMP parallel loops.
+/// @param mat Matrix and vectors for the current nonlinear/linear iteration state.
 void gs_sweep_rbdia(RBDIAMatrix *mat)
 {
     int N = mat->N;
 
+    // Reset transformed RHS from source each sweep.
     for (int idx = 0; idx < mat->nCells; idx++)
     {
         mat->bPrime[idx] = mat->source[idx];
     }
 
-// red sweep
+    // Red sweep: update cells with even (i + j + k) parity.
 #pragma omp parallel for
     for (int idx = 0; idx < mat->nCells; idx++)
     {
         // if(omp_get_thread_num() == 0) { printf("Total running threads = %d", omp_get_num_threads());;}
 
+        // Flattened index -> (k, i, j) coordinates.
         int k = idx / (N * N);
         int i = (idx / N) % N;
         int j = idx % N;
 
         if ((i + j + k) % 2 != 0)
-            continue; // skipping half the cells (possible area of improvement/optimisation)
+            continue; // Skip black cells in red phase.
 
+        // Start from current RHS contribution for this row.
         double psii = mat->bPrime[idx];
 
-        // forward neighbours
+        // Forward neighbors (+j, +i, +k).
         if (j < N - 1)
         {
             psii -= -1.0 * mat->psi[idx + 1];
@@ -97,7 +111,7 @@ void gs_sweep_rbdia(RBDIAMatrix *mat)
             psii -= -1.0 * mat->psi[idx + N * N];
         }
 
-        // backward neighbours
+        // Backward neighbors (-j, -i, -k).
         if (j > 0)
         {
             psii -= -1.0 * mat->psi[idx - 1];
@@ -111,16 +125,18 @@ void gs_sweep_rbdia(RBDIAMatrix *mat)
             psii -= -1.0 * mat->psi[idx - N * N];
         }
 
+        // Diagonal scaling and store updated value.
         psii /= mat->diag[idx];
         mat->psi[idx] = psii;
     }
 
-// black sweep
+    // Black sweep: update cells with odd (i + j + k) parity.
 #pragma omp parallel for
     for (int idx = 0; idx < mat->nCells; idx++)
     {
         // if(omp_get_thread_num() == 0) { printf("Total running threads = %d", omp_get_num_threads());;}
 
+        // Flattened index -> (k, i, j) coordinates.
         int k = idx / (N * N);
         int i = (idx / N) % N;
         int j = idx % N;
@@ -128,8 +144,10 @@ void gs_sweep_rbdia(RBDIAMatrix *mat)
         if ((i + j + k) % 2 != 1)
             continue;
 
+        // Start from current RHS contribution for this row.
         double psii = mat->bPrime[idx];
-        // forward neighbours
+
+        // Forward neighbors (+j, +i, +k).
         if (j < N - 1)
         {
             psii -= -1.0 * mat->psi[idx + 1];
@@ -143,7 +161,7 @@ void gs_sweep_rbdia(RBDIAMatrix *mat)
             psii -= -1.0 * mat->psi[idx + N * N];
         }
 
-        // backward neighbours
+        // Backward neighbors (-j, -i, -k).
         if (j > 0)
         {
             psii -= -1.0 * mat->psi[idx - 1];
@@ -157,16 +175,20 @@ void gs_sweep_rbdia(RBDIAMatrix *mat)
             psii -= -1.0 * mat->psi[idx - N * N];
         }
 
+        // Diagonal scaling and store updated value.
         psii /= mat->diag[idx];
         mat->psi[idx] = psii;
     }
 }
 
-// function to enable and store memory tracing for visualisation
+/// @brief Sweep variant with memory-access tracing for visualization/profiling.
+/// @param mat Matrix and vectors for the current iteration state.
+/// @param fp Output stream receiving one JSON line per processed cell.
 void gs_sweep_rbdia_trace(RBDIAMatrix *mat, FILE *fp)
 {
     int N = mat->N;
 
+    // Reset transformed RHS from source before this sweep.
     for (int idx = 0; idx < mat->nCells; idx++)
     {
         mat->bPrime[idx] = mat->source[idx];
@@ -174,19 +196,21 @@ void gs_sweep_rbdia_trace(RBDIAMatrix *mat, FILE *fp)
 
     for (int idx = 0; idx < mat->nCells; idx++)
     {
+        // Flattened index -> (k, i, j) coordinates.
         int k = idx / (N * N);
         int i = (idx / N) % N;
         int j = idx % N;
 
+        // At most three forward neighbors are recorded in this trace format.
         int read_array[3];
         int write_array[3];
         int read_array_idx = 0;
         int write_array_idx = 0;
 
+        // Start from current RHS contribution for this row.
         double psii = mat->bPrime[idx];
 
-        // upper triangle pull
-        // also writing the indices being accessed to the file
+        // Upper-triangular pull and read-index capture.
         if (j < N - 1)
         {
             psii -= -1.0 * mat->psi[idx + 1];
@@ -208,7 +232,7 @@ void gs_sweep_rbdia_trace(RBDIAMatrix *mat, FILE *fp)
 
         psii /= mat->diag[idx];
 
-        // lower triangle push
+        // Lower-triangular push and write-index capture.
         if (j < N - 1)
         {
             mat->bPrime[idx + 1] -= -1.0 * psii;
@@ -230,6 +254,7 @@ void gs_sweep_rbdia_trace(RBDIAMatrix *mat, FILE *fp)
 
         mat->psi[idx] = psii;
 
+        // Emit JSON trace for this cell: solver tag, cell index, read list, write list.
         fprintf(fp, "{\"solver\":\"DIA\",\"cell\":%d,\"read\":[", idx);
         for (int r = 0; r < read_array_idx; r++)
         {
@@ -249,6 +274,8 @@ void gs_sweep_rbdia_trace(RBDIAMatrix *mat, FILE *fp)
     }
 }
 
+/// @brief Release all heap-allocated arrays owned by the RBDIA matrix container.
+/// @param mat Matrix whose internal buffers are deallocated.
 void free_rbdia(RBDIAMatrix *mat)
 {
     free(mat->bPrime);
