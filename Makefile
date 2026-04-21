@@ -2,7 +2,8 @@ CC = g++
 CFLAGS_BASE = -Wall -Wextra -g -std=c++17 -I./include -fopenmp
 LDFLAGS = -fopenmp -lm
 
-SRCS = src/dia_solver.cpp src/rb_dia_solver.cpp src/ldu_solver.cpp src/main.cpp src/problem.cpp src/utils.cpp
+SRCS = src/dia_solver.cpp src/rb_dia_solver.cpp src/ldu_solver.cpp src/main.cpp src/problem.cpp src/utils.cpp src/math_sanity_check.cpp
+
 OBJS = $(SRCS:.cpp=.o)
 
 TARGET = poisson_benchmark
