@@ -1,4 +1,5 @@
-typedef struct {
+typedef struct
+{
     double *diag;
     double *upper;
     double *lower;
@@ -9,7 +10,7 @@ typedef struct {
     double *source;
     int nCells;
     int nFaces;
-} LDUMatrix ;
+} LDUMatrix;
 
 void assemble_ldu(LDUMatrix *mat, double *source, int N);
 void gs_sweep_ldu(LDUMatrix *mat);

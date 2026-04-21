@@ -11,7 +11,7 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
 
     mat->nFaces = 3 * N * N * (N - 1); // ((N - 1) * N * N) + (N * (N - 1) * N) + (N * N * (N - 1));
     mat->nCells = N * N * N;
-    mat->nFaces = 3 * N * N * (N-1);
+    mat->nFaces = 3 * N * N * (N - 1);
     mat->diag = (double *)calloc(mat->nCells, sizeof(double));
     mat->upper = (double *)malloc(sizeof(double) * mat->nFaces);
     mat->lower = (double *)malloc(sizeof(double) * mat->nFaces);
@@ -22,7 +22,7 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
     mat->source = (double *)malloc(sizeof(double) * mat->nCells);
 
     // copying the source
-    for(int idx = 0; idx < mat->nCells; idx++)
+    for (int idx = 0; idx < mat->nCells; idx++)
     {
         mat->source[idx] = source[idx];
     }
@@ -30,7 +30,7 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
     int f = 0;
     mat->ownerStart[0] = 0;
 
-    for(int idx = 0; idx < N * N * N; idx++)
+    for (int idx = 0; idx < N * N * N; idx++)
     {
         int k = idx / (N * N);
         int i = (idx / N) % N;
@@ -45,9 +45,9 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
             // there is a face between idx (cell) and idx + 1 (cell + 1)
             mat->lower[f] = -1.0;
             mat->upper[f] = -1.0;
-            mat->uAddr[f] = idx+1;
+            mat->uAddr[f] = idx + 1;
             mat->diag[idx] += 1.0;
-            mat->diag[idx+1] += 1.0;
+            mat->diag[idx + 1] += 1.0;
             f++;
         }
 
@@ -57,9 +57,9 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
             // there is a cell between idx (cell) and idx + N (cell + N)
             mat->lower[f] = -1.0;
             mat->upper[f] = -1.0;
-            mat->uAddr[f] = idx+N;
+            mat->uAddr[f] = idx + N;
             mat->diag[idx] += 1.0;
-            mat->diag[idx+N] += 1.0;
+            mat->diag[idx + N] += 1.0;
             f++;
         }
 
@@ -67,29 +67,47 @@ void assemble_ldu(LDUMatrix *mat, double *source, int N)
         {
             mat->lower[f] = -1.0;
             mat->upper[f] = -1.0;
-            mat->uAddr[f] = idx+(N*N);
+            mat->uAddr[f] = idx + (N * N);
             mat->diag[idx] += 1.0;
-            mat->diag[idx+(N*N)] += 1.0;
+            mat->diag[idx + (N * N)] += 1.0;
             f++;
         }
     }
 
     // Dirichlet boundary fix: all N^3 cells, six faces
-        for (int idx = 0; idx < N * N * N; idx++)
+    for (int idx = 0; idx < N * N * N; idx++)
+    {
+        int k = idx / (N * N);
+        int i = (idx / N) % N;
+        int j = idx % N;
+
+        if (j == 0)
         {
-            int k = idx / (N * N);
-            int i = (idx / N) % N;
-            int j = idx % N;
-
-            if (j == 0)     { mat->diag[idx] += 2.0; }
-            if (j == N - 1) { mat->diag[idx] += 2.0; }
-            if (i == 0)     { mat->diag[idx] += 2.0; }
-            if (i == N - 1) { mat->diag[idx] += 2.0; }
-            if (k == 0)     { mat->diag[idx] += 2.0; }
-            if (k == N - 1) { mat->diag[idx] += 2.0; }
+            mat->diag[idx] += 2.0;
         }
+        if (j == N - 1)
+        {
+            mat->diag[idx] += 2.0;
+        }
+        if (i == 0)
+        {
+            mat->diag[idx] += 2.0;
+        }
+        if (i == N - 1)
+        {
+            mat->diag[idx] += 2.0;
+        }
+        if (k == 0)
+        {
+            mat->diag[idx] += 2.0;
+        }
+        if (k == N - 1)
+        {
+            mat->diag[idx] += 2.0;
+        }
+    }
 
-    mat->ownerStart[N*N*N] = f; //should this be mat->nCells = f  instead?
+    mat->ownerStart[N * N * N] = f; // should this be mat->nCells = f  instead?
     printf("f = %d, nFaces = %d\n", f, mat->nFaces);
     assert(f == mat->nFaces);
 }
@@ -102,24 +120,24 @@ void gs_sweep_ldu(LDUMatrix *mat)
         mat->bPrime[idx] = mat->source[idx];
     }
 
-    for(int idx = 0; idx < mat->nCells; idx++)
+    for (int idx = 0; idx < mat->nCells; idx++)
     {
         int f_start = mat->ownerStart[idx];
-        int f_end = mat->ownerStart[idx+1];
+        int f_end = mat->ownerStart[idx + 1];
 
         double psii = mat->bPrime[idx];
 
         // upper triangle pull -> subtracting the stale neighbours from the unsolved (upper triangle)
-        for(int f = f_start; f < f_end; f++)
+        for (int f = f_start; f < f_end; f++)
         {
             psii -= mat->upper[f] * mat->psi[mat->uAddr[f]];
         }
 
         // dividing by the diagonal (pivot) -> strictly needs to be outside the loop (otherwise div. can happen twice or thrice or once depending on the number of faces each cell owns)
-        psii /=mat->diag[idx];
+        psii /= mat->diag[idx];
 
         // lower triangle push -> pushing the updated values into future cells' RHS
-        for(int f = f_start; f < f_end; f++)
+        for (int f = f_start; f < f_end; f++)
         {
             mat->bPrime[mat->uAddr[f]] -= mat->lower[f] * psii;
         }
@@ -128,8 +146,6 @@ void gs_sweep_ldu(LDUMatrix *mat)
         mat->psi[idx] = psii;
     }
 }
-
-
 
 void free_ldu(LDUMatrix *mat)
 {

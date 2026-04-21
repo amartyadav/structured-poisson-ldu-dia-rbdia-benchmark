@@ -13,7 +13,7 @@ void assemble_rbdia(RBDIAMatrix *mat, double *source, int N)
     mat->psi = (double *)calloc(mat->nCells, sizeof(double)); // initial guess for the solver (solution vector) = 0 (hence, calloc);
 
     // copying the source
-    for(int idx = 0; idx < mat->nCells; idx++)
+    for (int idx = 0; idx < mat->nCells; idx++)
     {
         mat->source[idx] = source[idx];
     }
@@ -31,12 +31,30 @@ void assemble_rbdia(RBDIAMatrix *mat, double *source, int N)
         int j = cell % N;
 
         mat->diag[cell] = 6.0;
-        if (j == 0)     { mat->diag[cell] += 1.0; }
-        if (j == N - 1) { mat->diag[cell] += 1.0; }
-        if (i == 0)     { mat->diag[cell] += 1.0; }
-        if (i == N - 1) { mat->diag[cell] += 1.0; }
-        if (k == 0)     { mat->diag[cell] += 1.0; }
-        if (k == N - 1) { mat->diag[cell] += 1.0; }
+        if (j == 0)
+        {
+            mat->diag[cell] += 1.0;
+        }
+        if (j == N - 1)
+        {
+            mat->diag[cell] += 1.0;
+        }
+        if (i == 0)
+        {
+            mat->diag[cell] += 1.0;
+        }
+        if (i == N - 1)
+        {
+            mat->diag[cell] += 1.0;
+        }
+        if (k == 0)
+        {
+            mat->diag[cell] += 1.0;
+        }
+        if (k == N - 1)
+        {
+            mat->diag[cell] += 1.0;
+        }
     }
 }
 
@@ -50,9 +68,9 @@ void gs_sweep_rbdia(RBDIAMatrix *mat)
         mat->bPrime[idx] = mat->source[idx];
     }
 
-    // red sweep
-    #pragma omp parallel for
-    for(int idx = 0; idx < mat->nCells; idx++)
+// red sweep
+#pragma omp parallel for
+    for (int idx = 0; idx < mat->nCells; idx++)
     {
         // if(omp_get_thread_num() == 0) { printf("Total running threads = %d", omp_get_num_threads());;}
 
@@ -60,46 +78,84 @@ void gs_sweep_rbdia(RBDIAMatrix *mat)
         int i = (idx / N) % N;
         int j = idx % N;
 
-        if((i+j+k) % 2 != 0) continue;//skipping half the cells (possible area of improvement/optimisation)
+        if ((i + j + k) % 2 != 0)
+            continue; // skipping half the cells (possible area of improvement/optimisation)
 
         double psii = mat->bPrime[idx];
 
-        //forward neighbours
-        if (j < N - 1) { psii -= -1.0 * mat->psi[idx + 1]; }
-        if (i < N - 1) { psii -= -1.0 * mat->psi[idx + N]; }
-        if (k < N - 1) { psii -= -1.0 * mat->psi[idx + N * N]; }
+        // forward neighbours
+        if (j < N - 1)
+        {
+            psii -= -1.0 * mat->psi[idx + 1];
+        }
+        if (i < N - 1)
+        {
+            psii -= -1.0 * mat->psi[idx + N];
+        }
+        if (k < N - 1)
+        {
+            psii -= -1.0 * mat->psi[idx + N * N];
+        }
 
         // backward neighbours
-        if(j > 0) { psii -= -1.0 * mat->psi[idx - 1]; }
-        if(i > 0) { psii -= -1.0 * mat->psi[idx - N]; }
-        if(k > 0) { psii -= -1.0 * mat->psi[idx - N * N]; }
+        if (j > 0)
+        {
+            psii -= -1.0 * mat->psi[idx - 1];
+        }
+        if (i > 0)
+        {
+            psii -= -1.0 * mat->psi[idx - N];
+        }
+        if (k > 0)
+        {
+            psii -= -1.0 * mat->psi[idx - N * N];
+        }
 
         psii /= mat->diag[idx];
         mat->psi[idx] = psii;
     }
 
-    // black sweep
-    #pragma omp parallel for
-    for(int idx = 0; idx < mat->nCells; idx++)
+// black sweep
+#pragma omp parallel for
+    for (int idx = 0; idx < mat->nCells; idx++)
     {
         // if(omp_get_thread_num() == 0) { printf("Total running threads = %d", omp_get_num_threads());;}
 
-        int k = idx / (N*N);
+        int k = idx / (N * N);
         int i = (idx / N) % N;
         int j = idx % N;
 
-        if((i + j + k) % 2 != 1) continue;
+        if ((i + j + k) % 2 != 1)
+            continue;
 
         double psii = mat->bPrime[idx];
-        //forward neighbours
-        if (j < N - 1) { psii -= -1.0 * mat->psi[idx + 1]; }
-        if (i < N - 1) { psii -= -1.0 * mat->psi[idx + N]; }
-        if (k < N - 1) { psii -= -1.0 * mat->psi[idx + N * N]; }
+        // forward neighbours
+        if (j < N - 1)
+        {
+            psii -= -1.0 * mat->psi[idx + 1];
+        }
+        if (i < N - 1)
+        {
+            psii -= -1.0 * mat->psi[idx + N];
+        }
+        if (k < N - 1)
+        {
+            psii -= -1.0 * mat->psi[idx + N * N];
+        }
 
         // backward neighbours
-        if(j > 0) { psii -= -1.0 * mat->psi[idx - 1]; }
-        if(i > 0) { psii -= -1.0 * mat->psi[idx - N]; }
-        if(k > 0) { psii -= -1.0 * mat->psi[idx - N * N]; }
+        if (j > 0)
+        {
+            psii -= -1.0 * mat->psi[idx - 1];
+        }
+        if (i > 0)
+        {
+            psii -= -1.0 * mat->psi[idx - N];
+        }
+        if (k > 0)
+        {
+            psii -= -1.0 * mat->psi[idx - N * N];
+        }
 
         psii /= mat->diag[idx];
         mat->psi[idx] = psii;
@@ -127,7 +183,6 @@ void gs_sweep_rbdia_trace(RBDIAMatrix *mat, FILE *fp)
         int read_array_idx = 0;
         int write_array_idx = 0;
 
-
         double psii = mat->bPrime[idx];
 
         // upper triangle pull
@@ -135,13 +190,13 @@ void gs_sweep_rbdia_trace(RBDIAMatrix *mat, FILE *fp)
         if (j < N - 1)
         {
             psii -= -1.0 * mat->psi[idx + 1];
-            read_array[read_array_idx] = idx+1;
+            read_array[read_array_idx] = idx + 1;
             read_array_idx++;
         }
         if (i < N - 1)
         {
             psii -= -1.0 * mat->psi[idx + N];
-            read_array[read_array_idx] = idx+N;
+            read_array[read_array_idx] = idx + N;
             read_array_idx++;
         }
         if (k < N - 1)
@@ -157,13 +212,13 @@ void gs_sweep_rbdia_trace(RBDIAMatrix *mat, FILE *fp)
         if (j < N - 1)
         {
             mat->bPrime[idx + 1] -= -1.0 * psii;
-            write_array[write_array_idx] = idx+1;
+            write_array[write_array_idx] = idx + 1;
             write_array_idx++;
         }
         if (i < N - 1)
         {
             mat->bPrime[idx + N] -= -1.0 * psii;
-            write_array[write_array_idx] = idx+N;
+            write_array[write_array_idx] = idx + N;
             write_array_idx++;
         }
         if (k < N - 1)
@@ -178,14 +233,16 @@ void gs_sweep_rbdia_trace(RBDIAMatrix *mat, FILE *fp)
         fprintf(fp, "{\"solver\":\"DIA\",\"cell\":%d,\"read\":[", idx);
         for (int r = 0; r < read_array_idx; r++)
         {
-            if (r > 0) fprintf(fp, ",");
+            if (r > 0)
+                fprintf(fp, ",");
             fprintf(fp, "%d", read_array[r]);
         }
         fprintf(fp, "],\"write\":[");
 
         for (int w = 0; w < write_array_idx; w++)
         {
-            if (w > 0) fprintf(fp, ",");
+            if (w > 0)
+                fprintf(fp, ",");
             fprintf(fp, "%d", write_array[w]);
         }
         fprintf(fp, "]}\n");

@@ -8,7 +8,6 @@
 #include "rb_dia_solver.hpp"
 #include <chrono>
 
-
 #ifdef LIKWID_PERFMON
 #include <likwid-marker.h>
 #else
@@ -25,14 +24,16 @@ void convergence_test_DIA(int N, double tol, int max_sweeps);
 void convergence_test_RBDIA(int N, double tol, int max_sweeps);
 void convergence_test_combined(int N, double tol, int max_sweeps);
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     if (argc > 1 && strcmp(argv[1], "profile") == 0)
     {
         int N = 100;
         int num_sweeps = 1000;
-        if (argc > 2) N = atoi(argv[2]);
-        if (argc > 3) num_sweeps = atoi(argv[3]);
+        if (argc > 2)
+            N = atoi(argv[2]);
+        if (argc > 3)
+            num_sweeps = atoi(argv[3]);
 
         LIKWID_MARKER_INIT;
         LIKWID_MARKER_THREADINIT;
@@ -46,9 +47,12 @@ int main(int argc, char *argv[]) {
         int N = 100;
         double tol = 1e-8;
         int max_sweeps = 20000;
-        if (argc > 2) N = atoi(argv[2]);
-        if (argc > 3) tol = atof(argv[3]);
-        if (argc > 4) max_sweeps = atoi(argv[4]);
+        if (argc > 2)
+            N = atoi(argv[2]);
+        if (argc > 3)
+            tol = atof(argv[3]);
+        if (argc > 4)
+            max_sweeps = atoi(argv[4]);
 
         convergence_test_combined(N, tol, max_sweeps);
     }
@@ -57,9 +61,12 @@ int main(int argc, char *argv[]) {
         int N = 100;
         double tol = 1e-15;
         int max_sweeps = 50000;
-        if (argc > 2) N = atoi(argv[2]);
-        if (argc > 3) tol = atof(argv[3]);
-        if (argc > 4) max_sweeps = atoi(argv[4]);
+        if (argc > 2)
+            N = atoi(argv[2]);
+        if (argc > 3)
+            tol = atof(argv[3]);
+        if (argc > 4)
+            max_sweeps = atoi(argv[4]);
 
         convergence_test_DIA(N, tol, max_sweeps);
     }
@@ -68,18 +75,22 @@ int main(int argc, char *argv[]) {
         int N = 100;
         double tol = 1e-15;
         int max_sweeps = 50000;
-        if (argc > 2) N = atoi(argv[2]);
-        if (argc > 3) tol = atof(argv[3]);
-        if (argc > 4) max_sweeps = atoi(argv[4]);
+        if (argc > 2)
+            N = atoi(argv[2]);
+        if (argc > 3)
+            tol = atof(argv[3]);
+        if (argc > 4)
+            max_sweeps = atoi(argv[4]);
 
         convergence_test_RBDIA(N, tol, max_sweeps);
     }
-    else {
+    else
+    {
         printf("\n\n=== USAGE ===\n");
         printf("./poisson_benchmark [mode] [N] [tolerance] [max_sweeps]\n");
 
         printf("--- mode           - The mode of the benchmark/run that you require.\n");
-        //print possible options for mode below - 'profile', 'convergence', 'diaconvergence', 'rbdiaconvergence'\n"
+        // print possible options for mode below - 'profile', 'convergence', 'diaconvergence', 'rbdiaconvergence'\n"
         printf("\n=== MODES ===\n");
         printf("--- profile             -     !!! ONLY RUN THIS MODE IF COMPILED WITH 'make profile' - Read 'Profiling' section below for details!!!\n");
         printf("                              Run a profiling session for a given N and number of sweeps. 1st arg = N, 2nd arg = num_sweeps.\n");
@@ -99,26 +110,22 @@ int main(int argc, char *argv[]) {
         printf("\n=== PROFILING ===\n");
         printf("'profile' mode will run a profiling session for a given N and number of sweeps. It will print the working set size for both DIA and LDU, and then run the specified number of sweeps for each solver while timing them with LIKWID markers. The residual after the sweeps will also be printed.\n\n");
         printf("NOTE: 'profile' mode should only be run if the code is compiled with 'make profile', which enables LIKWID performance monitoring. Running 'profile' mode without LIKWID support will not give meaningful results. Also, profiling mode creates three binaries - O1, O2, and O3. Run accordingly.\n");
-    
     }
     return 0;
 }
 
-void profile_sweeps(int N, int num_sweeps) {
+void profile_sweeps(int N, int num_sweeps)
+{
     int nCells = N * N * N;
     int nFaces = 3 * N * N * (N - 1);
 
     printf("=== Profiling run: N=%d, sweeps=%d ===\n", N, num_sweeps);
     printf("Working set (DIA): ~%.1f MB\n",
            (4.0 * nCells * sizeof(double)) / (1024.0 * 1024.0));
-     printf("Working set (LDU): ~%.1f MB\n",
-            (4.0 * nCells * sizeof(double)
-             + 3.0 * nFaces * sizeof(double)
-             + nFaces * sizeof(int)
-             + (nCells + 1) * sizeof(int))
-            / (1024.0 * 1024.0));
+    printf("Working set (LDU): ~%.1f MB\n",
+           (4.0 * nCells * sizeof(double) + 3.0 * nFaces * sizeof(double) + nFaces * sizeof(int) + (nCells + 1) * sizeof(int)) / (1024.0 * 1024.0));
 
-    double *b = (double*)malloc(sizeof(double) * nCells);
+    double *b = (double *)malloc(sizeof(double) * nCells);
     compute_source(b, N);
 
     // --- LDU solver ---
@@ -139,11 +146,10 @@ void profile_sweeps(int N, int num_sweeps) {
         if (totalCallsLDU % 1000 == 0)
         {
             std::cout << "LDU_sweep: totalTime=" << totalSweepTimeLDU
-                << "s calls=" << totalCallsLDU << std::endl;
+                      << "s calls=" << totalCallsLDU << std::endl;
         }
     }
     LIKWID_MARKER_STOP("LDU_sweep");
-
 
     double res_ldu = compute_residual(ldu.psi, b, N);
     printf("LDU residual after %d sweeps: %.6e\n", num_sweeps, res_ldu);
@@ -167,15 +173,12 @@ void profile_sweeps(int N, int num_sweeps) {
     totalSweepTimeDIA += std::chrono::duration<double>(t1DIA - t0DIA).count();
     totalCallsDIA++;
 
-
-        std::cout << "DIA_sweep: totalTime=" << totalSweepTimeDIA
-            << "s calls=" << totalCallsDIA << std::endl;
-
+    std::cout << "DIA_sweep: totalTime=" << totalSweepTimeDIA
+              << "s calls=" << totalCallsDIA << std::endl;
 
     double res_dia = compute_residual(dia.psi, b, N);
     printf("DIA residual after %d sweeps: %.6e\n", num_sweeps, res_dia);
     free_dia(&dia);
-
 
     // --- RBDIA solver ---
     RBDIAMatrix rbdia;
@@ -195,9 +198,8 @@ void profile_sweeps(int N, int num_sweeps) {
     totalSweepTimeRBDIA += std::chrono::duration<double>(t1RBDIA - t0RBDIA).count();
     totalCallsRBDIA++;
 
-        std::cout << "RBDIA_sweep: totalTime=" << totalSweepTimeRBDIA
-            << "s calls=" << totalCallsRBDIA << std::endl;
-
+    std::cout << "RBDIA_sweep: totalTime=" << totalSweepTimeRBDIA
+              << "s calls=" << totalCallsRBDIA << std::endl;
 
     double res_rbdia = compute_residual(rbdia.psi, b, N);
     printf("RBDIA residual after %d sweeps: %.6e\n", num_sweeps, res_rbdia);
@@ -363,7 +365,6 @@ void convergence_test_DIA(int N, double tol, int max_sweeps)
     double *bDia = (double *)malloc(sizeof(double) * nCells);
     double *uExactDia = (double *)malloc(sizeof(double) * nCells);
 
-
     compute_source(bDia, N);
     compute_exact(uExactDia, N);
 
@@ -372,12 +373,12 @@ void convergence_test_DIA(int N, double tol, int max_sweeps)
     double residual = compute_residual(diamat.psi, bDia, N);
     printf("Initial residual = %.6e\n", residual);
 
-    while(residual > tol && sweeps < max_sweeps)
+    while (residual > tol && sweeps < max_sweeps)
     {
         gs_sweep_dia(&diamat);
         sweeps++;
 
-        if(sweeps % 50 == 0)
+        if (sweeps % 50 == 0)
         {
             residual = compute_residual(diamat.psi, bDia, N);
             printf("Sweep %4d: residual = %.6e\n", sweeps, residual);
@@ -395,8 +396,10 @@ void convergence_test_DIA(int N, double tol, int max_sweeps)
     printf("L2 error at the end of the run: %.6e\n", l2_error);
 
     // "N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e"
-    if(residual < tol) { printf("N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error); }
-
+    if (residual < tol)
+    {
+        printf("N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error);
+    }
 
     free_dia(&diamat);
     free(bDia);
@@ -414,7 +417,6 @@ void convergence_test_RBDIA(int N, double tol, int max_sweeps)
     double *b = (double *)malloc(sizeof(double) * nCells);
     double *u_exact = (double *)malloc(sizeof(double) * nCells);
 
-
     compute_source(b, N);
     compute_exact(u_exact, N);
 
@@ -423,12 +425,12 @@ void convergence_test_RBDIA(int N, double tol, int max_sweeps)
     double residual = compute_residual(rbdiamat.psi, b, N);
     printf("Initial residual = %.6e\n", residual);
 
-    while(residual > tol && sweeps < max_sweeps)
+    while (residual > tol && sweeps < max_sweeps)
     {
         gs_sweep_rbdia(&rbdiamat);
         sweeps++;
 
-        if(sweeps % 50 == 0)
+        if (sweeps % 50 == 0)
         {
             residual = compute_residual(rbdiamat.psi, b, N);
             printf("Sweep %4d: residual = %.6e\n", sweeps, residual);
@@ -446,7 +448,10 @@ void convergence_test_RBDIA(int N, double tol, int max_sweeps)
     printf("L2 error at the end of the run: %.6e\n", l2_error);
 
     // "N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e"
-    if(residual < tol) { printf("N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error); }
+    if (residual < tol)
+    {
+        printf("N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error);
+    }
 
     free_rbdia(&rbdiamat);
     free(b);

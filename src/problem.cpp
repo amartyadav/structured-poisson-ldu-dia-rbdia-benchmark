@@ -64,20 +64,44 @@ double compute_residual(double *u, double *b, int N)
         int j = idx % N;
 
         double diag = 6.0;
-        if (j == 0)     { diag += 1.0; }
-        if (j == N - 1) { diag += 1.0; }
-        if (i == 0)     { diag += 1.0; }
-        if (i == N - 1) { diag += 1.0; }
-        if (k == 0)     { diag += 1.0; }
-        if (k == N - 1) { diag += 1.0; }
+        if (j == 0)
+        {
+            diag += 1.0;
+        }
+        if (j == N - 1)
+        {
+            diag += 1.0;
+        }
+        if (i == 0)
+        {
+            diag += 1.0;
+        }
+        if (i == N - 1)
+        {
+            diag += 1.0;
+        }
+        if (k == 0)
+        {
+            diag += 1.0;
+        }
+        if (k == N - 1)
+        {
+            diag += 1.0;
+        }
 
         double Au_idx = diag * u[idx];
-        if (j < N - 1) Au_idx -= u[idx + 1];
-        if (j > 0)     Au_idx -= u[idx - 1];
-        if (i < N - 1) Au_idx -= u[idx + N];
-        if (i > 0)     Au_idx -= u[idx - N];
-        if (k < N - 1) Au_idx -= u[idx + N * N];
-        if (k > 0)     Au_idx -= u[idx - N * N];
+        if (j < N - 1)
+            Au_idx -= u[idx + 1];
+        if (j > 0)
+            Au_idx -= u[idx - 1];
+        if (i < N - 1)
+            Au_idx -= u[idx + N];
+        if (i > 0)
+            Au_idx -= u[idx - N];
+        if (k < N - 1)
+            Au_idx -= u[idx + N * N];
+        if (k > 0)
+            Au_idx -= u[idx - N * N];
 
         sum += (b[idx] - Au_idx) * (b[idx] - Au_idx);
     }

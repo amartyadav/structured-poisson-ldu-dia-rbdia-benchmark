@@ -2,24 +2,20 @@
 // The off-diagonal coefficient is a single scalar (e.g. -1.0),
 // not an array, because it's the same for every face
 #include <stdio.h>
-typedef struct {
-    int N;              // grid dimension (square grid, so N×N cells)
-    int nCells;         // number of cells (N*N)
-    double *diag;       // diagonal coefficients, length N*N
-    double *psi;        // solution vector, length N*N
-    double *bPrime;     // working RHS, length N*N
-    double *source;     // original RHS, length N*N
+typedef struct
+{
+    int N;          // grid dimension (square grid, so N×N cells)
+    int nCells;     // number of cells (N*N)
+    double *diag;   // diagonal coefficients, length N*N
+    double *psi;    // solution vector, length N*N
+    double *bPrime; // working RHS, length N*N
+    double *source; // original RHS, length N*N
 } DIAMatrix;
 
 void assemble_dia(DIAMatrix *mat, double *source, int N);
 void gs_sweep_dia(DIAMatrix *mat);
 void gs_sweep_dia_trace(DIAMatrix *mat, FILE *fp);
 void free_dia(DIAMatrix *mat);
-
-
-
-
-
 
 // Function descriptions (brief)
 // assemble_dia(DIAMatrix *mat, double *source, int N)
