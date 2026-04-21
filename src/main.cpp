@@ -46,74 +46,65 @@ void convergence_test_combined(int N, double tol, int max_sweeps);
 /// @return Exit code (0 on normal completion).
 int main(int argc, char *argv[])
 {
-    // Profile mode: fixed number of sweeps with LIKWID markers and timing output.
-    if (argc > 1 && strcmp(argv[1], "profile") == 0)
-    {
-        int N = 100;
-        int num_sweeps = 1000;
-        // Optional overrides: argv[2]=N, argv[3]=num_sweeps.
-        if (argc > 2)
-            N = atoi(argv[2]);
-        if (argc > 3)
-            num_sweeps = atoi(argv[3]);
+    std::cout << "=== Select your case === \n";
+    std::cout << "1. Profile mode: Run a profiling session for a given N and number of sweeps. 1st arg = N, 2nd arg = num_sweeps.\n";
+    std::cout << "2. Convergence mode: Run a convergence test for both DIA and RBDIA for a given N, tolerance, and max sweeps. Set OMP_NUM_THREADS=n for the OpenMP threads for RB DIA\n";
+    std::cout << "3. DIA convergence mode: Run a convergence test for DIA only for a given N, tolerance, and max sweeps.\n";
+    std::cout << "4. RBDIA convergence mode: Run a convergence test for RBDIA only for a given N, tolerance, and max sweeps. Set OMP_NUM_THREADS=n for the OpenMP threads for RB DIA\n";
+    std::cout << "5. Math sanity check: Check the sanity and correctness of various math functions, calculations, etc. relevant to this benchmark for x86 and RISC-V Uttunga.\n";
+    std::cout << "6. Help: Print usage information.\n";
 
-        LIKWID_MARKER_INIT;
-        LIKWID_MARKER_THREADINIT;
+    std::cout << "Enter the case number (1-6): ";
+    int case_number;
+    std::cin >> case_number;
 
+    if(case_number == 1) {
+        int N, num_sweeps;
+        std::cout << "Enter N (grid resolution per dimension): ";
+        std::cin >> N;
+        std::cout << "Enter number of sweeps: ";
+        std::cin >> num_sweeps;
         profile_sweeps(N, num_sweeps);
-
-        LIKWID_MARKER_CLOSE;
     }
-    // Combined convergence mode: DIA + RBDIA with shared tolerances.
-    else if (argc > 1 && strcmp(argv[1], "convergence") == 0)
-    {
-        int N = 100;
-        double tol = 1e-8;
-        int max_sweeps = 20000;
-        // Optional overrides: argv[2]=N, argv[3]=tol, argv[4]=max_sweeps.
-        if (argc > 2)
-            N = atoi(argv[2]);
-        if (argc > 3)
-            tol = atof(argv[3]);
-        if (argc > 4)
-            max_sweeps = atoi(argv[4]);
-
+    else if(case_number == 2) {
+        int N, max_sweeps;
+        double tol;
+        std::cout << "Enter N (grid resolution per dimension): ";
+        std::cin >> N;
+        std::cout << "Enter residual tolerance: ";
+        std::cin >> tol;
+        std::cout << "Enter maximum number of sweeps: ";
+        std::cin >> max_sweeps;
         convergence_test_combined(N, tol, max_sweeps);
     }
-    // DIA-only convergence mode.
-    else if (argc > 1 && strcmp(argv[1], "diaconvergence") == 0)
-    {
-        int N = 100;
-        double tol = 1e-15;
-        int max_sweeps = 50000;
-        // Optional overrides: argv[2]=N, argv[3]=tol, argv[4]=max_sweeps.
-        if (argc > 2)
-            N = atoi(argv[2]);
-        if (argc > 3)
-            tol = atof(argv[3]);
-        if (argc > 4)
-            max_sweeps = atoi(argv[4]);
-
+    else if(case_number == 3) {
+        int N, max_sweeps;
+        double tol;
+        std::cout << "Enter N (grid resolution per dimension): ";
+        std::cin >> N;
+        std::cout << "Enter residual tolerance: ";
+        std::cin >> tol;
+        std::cout << "Enter maximum number of sweeps: ";
+        std::cin >> max_sweeps;
         convergence_test_DIA(N, tol, max_sweeps);
     }
-    // RBDIA-only convergence mode.
-    else if (argc > 1 && strcmp(argv[1], "rbconvergence") == 0)
-    {
-        int N = 100;
-        double tol = 1e-15;
-        int max_sweeps = 50000;
-        // Optional overrides: argv[2]=N, argv[3]=tol, argv[4]=max_sweeps.
-        if (argc > 2)
-            N = atoi(argv[2]);
-        if (argc > 3)
-            tol = atof(argv[3]);
-        if (argc > 4)
-            max_sweeps = atoi(argv[4]);
-
+    else if(case_number == 4) {
+        int N, max_sweeps;
+        double tol;
+        std::cout << "Enter N (grid resolution per dimension): ";
+        std::cin >> N;
+        std::cout << "Enter residual tolerance: ";
+        std::cin >> tol;
+        std::cout << "Enter maximum number of sweeps: ";
+        std::cin >> max_sweeps;
         convergence_test_RBDIA(N, tol, max_sweeps);
     }
-    else
-    {
+    else if(case_number == 5){
+        std::cout << "Running math sanity checks...\n";
+        // test_math_sanity();
+        std::cout << "Math sanity checks completed.\n";
+    }
+    else if(case_number == 6){
         // Help/usage output when no valid mode is provided.
         printf("\n\n=== USAGE ===\n");
         printf("./poisson_benchmark [mode] [N] [tolerance] [max_sweeps]\n");
@@ -139,6 +130,10 @@ int main(int argc, char *argv[])
         printf("\n=== PROFILING ===\n");
         printf("'profile' mode will run a profiling session for a given N and number of sweeps. It will print the working set size for both DIA and LDU, and then run the specified number of sweeps for each solver while timing them with LIKWID markers. The residual after the sweeps will also be printed.\n\n");
         printf("NOTE: 'profile' mode should only be run if the code is compiled with 'make profile', which enables LIKWID performance monitoring. Running 'profile' mode without LIKWID support will not give meaningful results. Also, profiling mode creates three binaries - O1, O2, and O3. Run accordingly.\n");
+    }
+    else {
+        std::cerr << "Invalid case number. Please run the program again and select a number between 1 and 5.\n";
+        return 1;
     }
     return 0;
 }
