@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include "problem.hpp"
 #include "ldu_solver.hpp"
 #include "dia_solver.hpp"
 #include "rb_dia_solver.hpp"
 #include <chrono>
+#include "math_sanity_check.hpp"
 
 #ifdef LIKWID_PERFMON
 #include <likwid-marker.h>
@@ -40,11 +42,30 @@ void convergence_test_RBDIA(int N, double tol, int max_sweeps);
 /// @param max_sweeps Maximum sweep budget.
 void convergence_test_combined(int N, double tol, int max_sweeps);
 
+// Helper functions to read input with defaults
+static int read_int(const char *prompt, int default_val)
+{
+    std::string line;
+    printf("%s [default=%d]: ", prompt, default_val);
+    std::getline(std::cin, line);
+    if (line.empty())
+        return default_val;
+    return std::stoi(line);
+}
+
+static double read_double(const char *prompt, double default_val)
+{
+    std::string line;
+    printf("%s [default=%.1e]: ", prompt, default_val);
+    std::getline(std::cin, line);
+    if (line.empty())
+        return default_val;
+    return std::stod(line);
+}
+
 /// @brief CLI entry point selecting profiling or convergence workflows.
-/// @param argc Argument count.
-/// @param argv Argument vector.
 /// @return Exit code (0 on normal completion).
-int main(int argc, char *argv[])
+int main()
 {
     std::cout << "=== Select your case === \n";
     std::cout << "1. Profile mode: Run a profiling session for a given N and number of sweeps. 1st arg = N, 2nd arg = num_sweeps.\n";
@@ -57,60 +78,48 @@ int main(int argc, char *argv[])
     std::cout << "Enter the case number (1-6): ";
     int case_number;
     std::cin >> case_number;
+    std::cin.ignore(); // consume leftover newline so getline works
 
-    if(case_number == 1) {
-        int N, num_sweeps;
-        std::cout << "Enter N (grid resolution per dimension): ";
-        std::cin >> N;
-        std::cout << "Enter number of sweeps: ";
-        std::cin >> num_sweeps;
+    if (case_number == 1)
+    {
+        int N = read_int("Enter N (grid resolution per dimension)", 50);
+        int num_sweeps = read_int("Enter number of sweeps", 1000);
         profile_sweeps(N, num_sweeps);
     }
-    else if(case_number == 2) {
-        int N, max_sweeps;
-        double tol;
-        std::cout << "Enter N (grid resolution per dimension): ";
-        std::cin >> N;
-        std::cout << "Enter residual tolerance: ";
-        std::cin >> tol;
-        std::cout << "Enter maximum number of sweeps: ";
-        std::cin >> max_sweeps;
+    else if (case_number == 2)
+    {
+        int N = read_int("Enter N (grid resolution per dimension)", 50);
+        double tol = read_double("Enter residual tolerance", 1e-16);
+        int max_sweeps = read_int("Enter maximum number of sweeps", 50000);
         convergence_test_combined(N, tol, max_sweeps);
     }
-    else if(case_number == 3) {
-        int N, max_sweeps;
-        double tol;
-        std::cout << "Enter N (grid resolution per dimension): ";
-        std::cin >> N;
-        std::cout << "Enter residual tolerance: ";
-        std::cin >> tol;
-        std::cout << "Enter maximum number of sweeps: ";
-        std::cin >> max_sweeps;
+    else if (case_number == 3)
+    {
+        int N = read_int("Enter N (grid resolution per dimension)", 50);
+        double tol = read_double("Enter residual tolerance", 1e-16);
+        int max_sweeps = read_int("Enter maximum number of sweeps", 50000);
         convergence_test_DIA(N, tol, max_sweeps);
     }
-    else if(case_number == 4) {
-        int N, max_sweeps;
-        double tol;
-        std::cout << "Enter N (grid resolution per dimension): ";
-        std::cin >> N;
-        std::cout << "Enter residual tolerance: ";
-        std::cin >> tol;
-        std::cout << "Enter maximum number of sweeps: ";
-        std::cin >> max_sweeps;
+    else if (case_number == 4)
+    {
+        int N = read_int("Enter N (grid resolution per dimension)", 50);
+        double tol = read_double("Enter residual tolerance", 1e-16);
+        int max_sweeps = read_int("Enter maximum number of sweeps", 50000);
         convergence_test_RBDIA(N, tol, max_sweeps);
     }
-    else if(case_number == 5){
+    else if (case_number == 5)
+    {
         std::cout << "Running math sanity checks...\n";
-        // test_math_sanity();
+        test_math_sanity();
         std::cout << "Math sanity checks completed.\n";
     }
-    else if(case_number == 6){
+    else if (case_number == 6)
+    {
         // Help/usage output when no valid mode is provided.
         printf("\n\n=== USAGE ===\n");
         printf("./poisson_benchmark [mode] [N] [tolerance] [max_sweeps]\n");
 
         printf("--- mode           - The mode of the benchmark/run that you require.\n");
-        // print possible options for mode below - 'profile', 'convergence', 'diaconvergence', 'rbdiaconvergence'\n"
         printf("\n=== MODES ===\n");
         printf("--- profile             -     !!! ONLY RUN THIS MODE IF COMPILED WITH 'make profile' - Read 'Profiling' section below for details!!!\n");
         printf("                              Run a profiling session for a given N and number of sweeps. 1st arg = N, 2nd arg = num_sweeps.\n");
@@ -118,21 +127,26 @@ int main(int argc, char *argv[])
         printf("--- diaconvergence      -     Run a convergence test for DIA only for a given N, tolerance, and max sweeps.\n");
         printf("--- rbdiaconvergence    -     Run a convergence test for RBDIA only for a given N, tolerance, and max sweeps. Set OMP_NUM_THREADS=n for the OpenMP threads for RB DIA\n");
 
+        printf("\n=== DEFAULTS ===\n");
+        printf("N = 50, tolerance = 1e-16, max_sweeps = 50000\n");
+        printf("Press Enter at any prompt to accept the default value.\n");
+
         printf("\n=== N ===\n");
-        printf("The number of cells in each direction. Total cells = N^3. Default is 100.\n");
+        printf("The number of cells in each direction. Total cells = N^3. Default is 50.\n");
 
         printf("\n=== tolerance ===\n");
-        printf("The residual tolerance for convergence tests. Default is 1e-8 for combined convergence, and 1e-15 for DIA and RBDIA individual convergence tests.\n");
+        printf("The residual tolerance for convergence tests. Default is 1e-16.\n");
 
         printf("\n=== max_sweeps ===\n");
-        printf("The maximum number of sweeps to perform in convergence tests before giving up. Default is 20000 for combined convergence, and 50000 for DIA and RBDIA individual convergence tests.\n");
+        printf("The maximum number of sweeps to perform in convergence tests before giving up. Default is 50000.\n");
 
         printf("\n=== PROFILING ===\n");
         printf("'profile' mode will run a profiling session for a given N and number of sweeps. It will print the working set size for both DIA and LDU, and then run the specified number of sweeps for each solver while timing them with LIKWID markers. The residual after the sweeps will also be printed.\n\n");
         printf("NOTE: 'profile' mode should only be run if the code is compiled with 'make profile', which enables LIKWID performance monitoring. Running 'profile' mode without LIKWID support will not give meaningful results. Also, profiling mode creates three binaries - O1, O2, and O3. Run accordingly.\n");
     }
-    else {
-        std::cerr << "Invalid case number. Please run the program again and select a number between 1 and 5.\n";
+    else
+    {
+        std::cerr << "Invalid case number. Please run the program again and select a number between 1 and 6.\n";
         return 1;
     }
     return 0;
@@ -238,151 +252,6 @@ void profile_sweeps(int N, int num_sweeps)
     printf("\n=== Profiling complete ===\n");
 }
 
-// void test_multiple_N(void) {
-//     int N_s[] = {4, 6, 8, 12, 16, 20};
-//     int num_sizes = 6;
-
-//     printf("=== LDU Solver Runs ===\n\n");
-//     for (int i = 0; i < num_sizes; i++)
-//     {
-//         int N = N_s[i];
-//         int nCells = N * N * N;
-//         printf("=== Starting LDU GS for N=%d ===\n", N);
-//         LDUMatrix mat;
-//         double *b = (double *)malloc(sizeof(double) * nCells);
-//         double *u_exact = (double *)malloc(sizeof(double) * nCells);
-//         compute_source(b, N);
-//         compute_exact(u_exact, N);
-//         assemble_ldu(&mat, b, N);
-//         printf("diag[0]=%.1f  diag[nCells/2]=%.1f  diag[nCells-1]=%.1f\n",
-//                mat.diag[0], mat.diag[nCells / 2], mat.diag[nCells - 1]);
-//         printf("nFaces expected=%d  ownerStart[nCells]=%d\n",
-//                mat.nFaces, mat.ownerStart[mat.nCells]);
-//         for (int sweep = 0; sweep < 1000; sweep++)
-//         {
-//             static double totalSweepTimeLDU = 0.0;
-//             static int totalCallsLDU = 0;
-//             auto t0LDU = std::chrono::high_resolution_clock::now();
-//             gs_sweep_ldu(&mat);
-//             auto t1LDU = std::chrono::high_resolution_clock::now();
-//             totalSweepTimeLDU += std::chrono::duration<double>(t1LDU - t0LDU).count();
-//             totalCallsLDU++;
-//             if (totalCallsLDU % 1000 == 0)
-//             {
-//                 std::cout << "LDU_sweep: totalTime=" << totalSweepTimeLDU
-//                     << "s calls=" << totalCallsLDU << std::endl;
-//             }
-//             if (sweep % 500 == 0)
-//             {
-//                 double res = compute_residual(mat.psi, b, N);
-//                 printf("Sweep %4d: residual = %.6e\n", sweep, res);
-//                 if (res < 1e-14)
-//                 {
-//                     break;
-//                 }
-//             }
-//         }
-//         double l2 = compute_l2_error(mat.psi, u_exact, N);
-//         printf("L2 error = %.6e\n", l2);
-//         free_ldu(&mat);
-//         free(b);
-//         free(u_exact);
-//         printf("=== === ===\n");
-//     }
-
-//     printf("\n=== DIA Solver Runs ===\n\n");
-//     for (int i = 0; i < num_sizes; i++)
-//     {
-//         int N = N_s[i];
-//         int nCells = N * N * N;
-//         printf("=== Starting DIA GS for N=%d ===\n", N);
-//         DIAMatrix dmat;
-//         double *b = (double *)malloc(sizeof(double) * nCells);
-//         double *u_exact = (double *)malloc(sizeof(double) * nCells);
-//         compute_source(b, N);
-//         compute_exact(u_exact, N);
-//         assemble_dia(&dmat, b, N);
-//         printf("diag[0]=%.1f  diag[nCells/2]=%.1f  diag[nCells-1]=%.1f\n",
-//                dmat.diag[0], dmat.diag[nCells / 2], dmat.diag[nCells - 1]);
-//         for (int sweep = 0; sweep < 10000; sweep++)
-//         {
-//             static double totalSweepTimeDIA = 0.0;
-//             static int totalCallsDIA = 0;
-//             auto t0DIA = std::chrono::high_resolution_clock::now();
-//             gs_sweep_dia(&dmat);
-//             auto t1DIA = std::chrono::high_resolution_clock::now();
-//             totalSweepTimeDIA += std::chrono::duration<double>(t1DIA - t0DIA).count();
-//             totalCallsDIA++;
-//             if (totalCallsDIA % 1000 == 0)
-//             {
-//                 std::cout << "DIA_sweep: totalTime=" << totalSweepTimeDIA
-//                     << "s calls=" << totalCallsDIA << std::endl;
-//             }
-//             if (sweep % 500 == 0)
-//             {
-//                 double res = compute_residual(dmat.psi, b, N);
-//                 printf("Sweep %4d: residual = %.6e\n", sweep, res);
-//                 if (res < 1e-14)
-//                 {
-//                     break;
-//                 }
-//             }
-//         }
-//         double l2 = compute_l2_error(dmat.psi, u_exact, N);
-//         printf("L2 error = %.6e\n", l2);
-//         free_dia(&dmat);
-//         free(b);
-//         free(u_exact);
-//         printf("=== === ===\n");
-//     }
-
-//     printf("\n=== RBDIA Solver Runs ===\n\n");
-//     for (int i = 0; i < num_sizes; i++)
-//     {
-//         int N = N_s[i];
-//         int nCells = N * N * N;
-//         printf("=== Starting RBDIA GS for N=%d ===\n", N);
-//         RBDIAMatrix dmat;
-//         double *b = (double *)malloc(sizeof(double) * nCells);
-//         double *u_exact = (double *)malloc(sizeof(double) * nCells);
-//         compute_source(b, N);
-//         compute_exact(u_exact, N);
-//         assemble_rbdia(&dmat, b, N);
-//         printf("diag[0]=%.1f  diag[nCells/2]=%.1f  diag[nCells-1]=%.1f\n",
-//                dmat.diag[0], dmat.diag[nCells / 2], dmat.diag[nCells - 1]);
-//         for (int sweep = 0; sweep < 10000; sweep++)
-//         {
-//             static double totalSweepTimeRBDIA = 0.0;
-//             static int totalCallsRBDIA = 0;
-//             auto t0RBDIA = std::chrono::high_resolution_clock::now();
-//             gs_sweep_rbdia(&dmat);
-//             auto t1RBDIA = std::chrono::high_resolution_clock::now();
-//             totalSweepTimeRBDIA += std::chrono::duration<double>(t1RBDIA - t0RBDIA).count();
-//             totalCallsRBDIA++;
-//             if (totalCallsRBDIA % 1000 == 0)
-//             {
-//                 std::cout << "RBDIA_sweep: totalTime=" << totalSweepTimeRBDIA
-//                     << "s calls=" << totalCallsRBDIA << std::endl;
-//             }
-//             if (sweep % 500 == 0)
-//             {
-//                 double res = compute_residual(dmat.psi, b, N);
-//                 printf("Sweep %4d: residual = %.6e\n", sweep, res);
-//                 if (res < 1e-14)
-//                 {
-//                     break;
-//                 }
-//             }
-//         }
-//         double l2 = compute_l2_error(dmat.psi, u_exact, N);
-//         printf("L2 error = %.6e\n", l2);
-//         free_rbdia(&dmat);
-//         free(b);
-//         free(u_exact);
-//         printf("=== === ===\n");
-//     }
-// }
-
 /// @brief Run DIA sweeps until residual tolerance or sweep cap is reached.
 /// @param N Grid resolution per dimension.
 /// @param tol Target residual tolerance.
@@ -419,18 +288,15 @@ void convergence_test_DIA(int N, double tol, int max_sweeps)
         }
     }
 
-    if (sweeps >= max_sweeps)
-    {
-        printf("Failed to converge in %d sweeps. Hit the cap.\n", sweeps);
-    }
-
     // Report final accuracy against manufactured exact solution.
     double l2_error = compute_l2_error(diamat.psi, uExactDia, N);
 
-    printf("L2 error at the end of the run: %.6e\n", l2_error);
-
-    // "N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e"
-    if (residual < tol)
+    if (sweeps >= max_sweeps)
+    {
+        printf("Failed to converge in %d sweeps. Hit the cap.\n", sweeps);
+        printf("N=%d did NOT converge, sweeps=%d, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error);
+    }
+    else
     {
         printf("N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error);
     }
@@ -476,18 +342,15 @@ void convergence_test_RBDIA(int N, double tol, int max_sweeps)
         }
     }
 
-    if (sweeps >= max_sweeps)
-    {
-        printf("Failed to converge in %d sweeps. Hit the cap.\n", sweeps);
-    }
-
     // Report final accuracy against manufactured exact solution.
     double l2_error = compute_l2_error(rbdiamat.psi, u_exact, N);
 
-    printf("L2 error at the end of the run: %.6e\n", l2_error);
-
-    // "N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e"
-    if (residual < tol)
+    if (sweeps >= max_sweeps)
+    {
+        printf("Failed to converge in %d sweeps. Hit the cap.\n", sweeps);
+        printf("N=%d did NOT converge, sweeps=%d, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error);
+    }
+    else
     {
         printf("N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error);
     }
