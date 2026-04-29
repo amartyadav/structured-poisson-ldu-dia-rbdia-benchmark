@@ -30,8 +30,9 @@ void profile_sweeps(int N, int num_sweeps);
 /// @param N Grid resolution per dimension.
 /// @param tol Residual tolerance.
 /// @param max_sweeps Maximum sweep budget.
+void convergence_test_LDU(int N, double tol, int max_sweeps);
 void convergence_test_DIA(int N, double tol, int max_sweeps);
-/// @brief Run RBDIA-only convergence test to a residual tolerance.
+/// @brief Run RBDIA-only convergence test to a residual tolerance. 
 /// @param N Grid resolution per dimension.
 /// @param tol Residual tolerance.
 /// @param max_sweeps Maximum sweep budget.
@@ -72,10 +73,11 @@ int main()
     std::cout << "2. Convergence mode: Run a convergence test for both DIA and RBDIA for a given N, tolerance, and max sweeps. Set OMP_NUM_THREADS=n for the OpenMP threads for RB DIA\n";
     std::cout << "3. DIA convergence mode: Run a convergence test for DIA only for a given N, tolerance, and max sweeps.\n";
     std::cout << "4. RBDIA convergence mode: Run a convergence test for RBDIA only for a given N, tolerance, and max sweeps. Set OMP_NUM_THREADS=n for the OpenMP threads for RB DIA\n";
-    std::cout << "5. Math sanity check: Check the sanity and correctness of various math functions, calculations, etc. relevant to this benchmark for x86 and RISC-V Uttunga.\n";
-    std::cout << "6. Help: Print usage information.\n";
+    std::cout << "5. LDU convergence mode: Run a convergence test for LDU only for a given N, tolerance, and max sweeps.\n";
+    std::cout << "6. Math sanity check: Check the sanity and correctness of various math functions, calculations, etc. relevant to this benchmark for x86 and RISC-V Uttunga.\n";
+    std::cout << "7. Help: Print usage information.\n";
 
-    std::cout << "Enter the case number (1-6): ";
+    std::cout << "Enter the case number (1-7): ";
     int case_number;
     std::cin >> case_number;
     std::cin.ignore(); // consume leftover newline so getline works
@@ -109,11 +111,18 @@ int main()
     }
     else if (case_number == 5)
     {
+        int N = read_int("Enter N (grid resolution per dimension)", 50);
+        double tol = read_double("Enter residual tolerance", 1e-16);
+        int max_sweeps = read_int("Enter maximum number of sweeps", 50000);
+        convergence_test_LDU(N, tol, max_sweeps);
+    }
+    else if (case_number == 6)
+    {
         std::cout << "Running math sanity checks...\n";
         test_math_sanity();
         std::cout << "Math sanity checks completed.\n";
     }
-    else if (case_number == 6)
+    else if (case_number == 7)
     {
         // Help/usage output when no valid mode is provided.
         printf("\n\n=== USAGE ===\n");
@@ -126,6 +135,8 @@ int main()
         printf("--- convergence         -     Run a convergence test for both DIA and RBDIA for a given N, tolerance, and max sweeps. Set OMP_NUM_THREADS=n for the OpenMP threads for RB DIA\n");
         printf("--- diaconvergence      -     Run a convergence test for DIA only for a given N, tolerance, and max sweeps.\n");
         printf("--- rbdiaconvergence    -     Run a convergence test for RBDIA only for a given N, tolerance, and max sweeps. Set OMP_NUM_THREADS=n for the OpenMP threads for RB DIA\n");
+        printf("--- lduconvergence      -     Run a convergence test for LDU only for a given N, tolerance, and max sweeps.\n");
+        printf("--- mathsanity          -     Check the sanity and correctness of various math functions, calculations, etc. relevant to this benchmark for x86 and RISC-V Uttunga.\n");
 
         printf("\n=== DEFAULTS ===\n");
         printf("N = 50, tolerance = 1e-16, max_sweeps = 50000\n");
@@ -356,6 +367,56 @@ void convergence_test_RBDIA(int N, double tol, int max_sweeps)
     }
 
     free_rbdia(&rbdiamat);
+    free(b);
+    free(u_exact);
+}
+
+void convergence_test_LDU(int N, double tol, int max_sweeps)
+{
+    int sweeps = 0;
+
+    int nCells = N * N * N;
+
+    // Allocate problem data and initialize LDU system.
+    LDUMatrix ldumat;
+    double *b = (double *)malloc(sizeof(double) * nCells);
+    double *u_exact = (double *)malloc(sizeof(double) * nCells);
+
+    compute_source(b, N);
+    compute_exact(u_exact, N);
+    assemble_ldu(&ldumat, b, N);
+    double residual = compute_residual(ldumat.psi, b, N);
+    printf("Initial residual = %.6e\n", residual);
+
+    // Sweep until converged or capped; print residual periodically.
+    while (residual > tol && sweeps < max_sweeps)
+    {
+        gs_sweep_ldu(&ldumat);
+        sweeps++;
+        if (sweeps % 50 == 0)
+        {
+            residual = compute_residual(ldumat.psi, b, N);
+            printf("Sweep %4d: residual = %.6e\n", sweeps, residual);
+        }
+    }
+
+    // Always compute final residual so reporting is up-to-date.
+    residual = compute_residual(ldumat.psi, b, N);
+
+    // Report final accuracy against manufactured exact solution.
+    double l2_error = compute_l2_error(ldumat.psi, u_exact, N);
+
+    if (sweeps >= max_sweeps)
+    {
+        printf("Failed to converge in %d sweeps. Hit the cap.\n", sweeps);
+        printf("N=%d did NOT converge, sweeps=%d, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error);
+    }
+    else
+    {
+        printf("N=%d converged in %d sweeps, final residual %.6e, L2 error %.6e\n", N, sweeps, residual, l2_error);
+    }
+
+    free_ldu(&ldumat);
     free(b);
     free(u_exact);
 }
